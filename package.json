@@ -1,0 +1,20 @@
+{
+  "name": "vinskap",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "admin": "npm run dev -w @vinskap/admin",
+    "mobile": "npm run start -w @vinskap/mobile",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:db": "node --test --test-concurrency=1 tests/db.test.mjs",
+    "seed": "node tests/seed-demo.mjs",
+    "mock:vmp": "node tests/mock-vmp.mjs"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  }
+}

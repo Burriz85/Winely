@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&amp;family=Figtree:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<script src="./wines.js"></script>
+<script src="./vmp.js"></script>
+<style>
+body{margin:0;background:#F0EFE8;font-family:'Figtree',sans-serif;color:#2A2520;-webkit-font-smoothing:antialiased}
+a{color:#4E6B4D;text-decoration:none}a:hover{color:#6B8C6A}
+input,button{font-family:'Figtree',sans-serif}
+*{box-sizing:border-box}
+@keyframes scanline{0%{top:20%}50%{top:76%}100%{top:20%}}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 20px">
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="390" height="844" hint-size="390px,844px">
+<div style="height:844px;display:flex;flex-direction:column;background:#FAFAF5;position:relative;color:#2A2520;font-family:'Figtree',sans-serif">
+<div style="flex:1;overflow-y:auto;overflow-x:hidden;padding-top:54px">
+<sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+<div style="padding:12px 20px 28px;display:flex;flex-direction:column;gap:18px">
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Vinskapet</div>
+    <div style="display:flex;align-items:center;gap:4px">
+      <button onClick="{{ openSettings }}" style="display:flex;align-items:center;gap:6px;height:32px;padding:0 10px;border:1px solid #B8CEB7;border-radius:16px;background:transparent;font-size:11px;font-weight:500;color:#2A2520;cursor:pointer">
+        <span style="{{ apiDot }}"></span>{{ apiLabel }}
+      </button>
+      <button onClick="{{ openProfile }}" aria-label="Profil" style="width:36px;height:36px;margin-left:6px;border:0;border-radius:18px;background:#4E6B4D;color:#FAFAF5;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer">{{ uInitial }}</button>
+    </div>
+  </div>
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:44px;line-height:1;letter-spacing:-0.04em;text-transform:uppercase">{{ total }} flasker</div>
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid #B8CEB7;border-bottom:1px solid #B8CEB7">
+    <div style="padding:12px 0;display:flex;flex-direction:column;gap:2px">
+      <div style="font-size:10px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Viner</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:20px">{{ wineCount }}</div>
+    </div>
+    <div style="padding:12px 0 12px 14px;border-left:1px solid #B8CEB7;display:flex;flex-direction:column;gap:2px">
+      <div style="font-size:10px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Klar</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:20px;color:#A87C28">{{ readyCount }}</div>
+    </div>
+    <div style="padding:12px 0 12px 14px;border-left:1px solid #B8CEB7;display:flex;flex-direction:column;gap:2px">
+      <div style="font-size:10px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Verdi</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;white-space:nowrap">{{ value }}</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;border:1px solid #B8CEB7;border-radius:4px;background:#FFFFFF">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A403A" stroke-width="1.6"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+    <input value="{{ q }}" onChange="{{ onQ }}" placeholder="Søk i skapet" style="flex:1;border:0;outline:0;background:transparent;font-size:15px;color:#2A2520">
+  </div>
+  <div style="display:flex;gap:8px;overflow-x:auto;margin:0 -20px;padding:0 20px">
+    <sc-for list="{{ filters }}" as="f" hint-placeholder-count="5">
+      <button onClick="{{ f.onPick }}" style="{{ f.style }}">{{ f.label }}</button>
+    </sc-for>
+  </div>
+  <sc-if value="{{ isRows }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;flex-direction:column">
+    <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;padding:14px 0 6px;font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4E6B4D;border-bottom:1px solid #6B8C6A">
+          <span>{{ g.label }}</span><span>{{ g.count }}</span>
+        </div>
+        <sc-for list="{{ g.items }}" as="w" hint-placeholder-count="3">
+          <div onClick="{{ w.onOpen }}" style="display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid #F0EFE8;cursor:pointer">
+            <div style="{{ w.swatch }}"></div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+              <div style="font-family:'Syne',sans-serif;font-weight:600;font-size:16px;line-height:1.2">{{ w.name }}</div>
+              <div style="font-size:13px;color:#4A403A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ w.sub }}</div>
+              <div style="{{ w.dlStyle }}">{{ w.dl }}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end">
+              <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:22px;line-height:1">{{ w.qty }}</div>
+              <div style="font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#4A403A">fl.</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+  </sc-if>
+  <sc-if value="{{ isCards }}" hint-placeholder-val="{{ false }}">
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+    <sc-for list="{{ flat }}" as="w" hint-placeholder-count="4">
+      <div onClick="{{ w.onOpen }}" style="display:flex;flex-direction:column;background:#F0EFE8;border-radius:4px;overflow:hidden;cursor:pointer">
+        <div style="{{ w.cardTop }}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;width:100%;height:100%;gap:8px">
+            <div style="display:flex;flex-direction:column;justify-content:space-between;height:100%">
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:#FAFAF5">{{ w.yr }}</div>
+              <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:34px;line-height:1;color:#FAFAF5">{{ w.qty }}</div>
+            </div>
+            <div style="width:48px;height:72px;background:#FFFFFF;border-radius:4px;padding:4px"><div style="{{ w.bottle }}"></div></div>
+          </div>
+        </div>
+        <div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:3px">
+          <div style="font-family:'Syne',sans-serif;font-weight:600;font-size:14px;line-height:1.2">{{ w.name }}</div>
+          <div style="font-size:12px;color:#4A403A">{{ w.producer }}</div>
+          <div style="{{ w.dlStyle }}">{{ w.dl }}</div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+  </sc-if>
+  <sc-if value="{{ isWindow }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <sc-if value="{{ hasReady }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column">
+      <div style="padding:6px 0;font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#A87C28;border-bottom:1px solid #A87C28">Klar til å drikkes · eldst først</div>
+      <sc-for list="{{ ready }}" as="w" hint-placeholder-count="3">
+        <div onClick="{{ w.onOpen }}" style="display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #F0EFE8;cursor:pointer">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:#4A403A">{{ w.to }}</div>
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+            <div style="font-family:'Syne',sans-serif;font-weight:600;font-size:16px;line-height:1.2">{{ w.name }}</div>
+            <div style="font-size:13px;color:#4A403A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ w.sub }}</div>
+          </div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:20px">×{{ w.qty }}</div>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+    <sc-if value="{{ hasLater }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column">
+      <div style="padding:6px 0;font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4E6B4D;border-bottom:1px solid #6B8C6A">Lagres · klar fra</div>
+      <sc-for list="{{ later }}" as="w" hint-placeholder-count="2">
+        <div onClick="{{ w.onOpen }}" style="display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #F0EFE8;cursor:pointer">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:#4E6B4D">{{ w.from }}</div>
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+            <div style="font-family:'Syne',sans-serif;font-weight:600;font-size:16px;line-height:1.2">{{ w.name }}</div>
+            <div style="font-size:13px;color:#4A403A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ w.sub }}</div>
+          </div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:20px">×{{ w.qty }}</div>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+  </div>
+  </sc-if>
+  <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:40px 0;text-align:center;font-size:15px;color:#4A403A">Ingen viner matcher.</div>
+  </sc-if>
+</div>
+</sc-if>
+<sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column">
+  <div style="{{ w.cardTop }}">
+    <button onClick="{{ back }}" style="align-self:flex-start;display:flex;align-items:center;gap:6px;height:36px;padding:0 12px 0 8px;border:0;border-radius:18px;background:rgba(250,250,245,0.92);color:#2A2520;font-size:13px;font-weight:500;cursor:pointer">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"></path></svg>Skapet
+    </button>
+  </div>
+  <div style="padding:20px 20px 28px;display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;justify-content:center;margin-top:-68px;padding:12px;background:#FFFFFF;border-radius:4px;align-self:center"><div style="{{ heroImg }}"></div></div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">{{ w.type }} · {{ w.country }}</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:30px;line-height:1.05;letter-spacing:-0.03em;text-wrap:balance">{{ w.name }}</div>
+      <div style="font-size:15px;color:#4A403A">{{ w.producer }} · {{ w.yr }}</div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#F0EFE8;border-radius:4px">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <div style="font-size:10px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">I skapet</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;line-height:1">{{ w.qty }} fl.</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onClick="{{ takeOut }}" style="height:44px;padding:0 16px;border:1px solid #2A2520;border-radius:4px;background:transparent;color:#2A2520;font-size:14px;font-weight:600;cursor:pointer">Ta ut</button>
+        <button onClick="{{ putIn }}" style="height:44px;padding:0 16px;border:0;border-radius:4px;background:#4E6B4D;color:#FAFAF5;font-size:14px;font-weight:600;cursor:pointer">Sett inn</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div style="{{ w.dlStyle }}">{{ w.dl }}</div>
+      <div style="font-size:13px;color:#4A403A">Drikkevindu {{ w.from }}–{{ w.to }}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4E6B4D">Smak</div>
+      <div style="font-size:15px;line-height:1.6;text-wrap:pretty">{{ w.taste }}</div>
+      <div style="font-size:13px;color:#4A403A">Passer til: {{ w.food }}</div>
+    </div>
+    <div style="display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:6px;border-bottom:1px solid #6B8C6A">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4E6B4D">Fra Vinmonopolet</div>
+        <div style="font-size:12px;color:#4A403A">Varenr. {{ w.nr }}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #F0EFE8;font-size:14px"><span style="color:#4A403A">Pris</span><span style="font-weight:500">{{ wPrice }}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #F0EFE8;font-size:14px"><span style="color:#4A403A">Distrikt</span><span style="font-weight:500">{{ w.region }}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #F0EFE8;font-size:14px"><span style="color:#4A403A">Druer</span><span style="font-weight:500">{{ w.grape }}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #F0EFE8;font-size:14px"><span style="color:#4A403A">Alkohol</span><span style="font-weight:500">{{ w.abv }}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:11px 0;font-size:14px"><span style="color:#4A403A">Verdi i skapet</span><span style="font-weight:500">{{ wValue }}</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:12px">
+        <button onClick="{{ refreshSel }}" style="height:44px;padding:0 14px;border:1px solid #6B8C6A;border-radius:4px;background:transparent;color:#4E6B4D;font-size:13px;font-weight:600;cursor:pointer">Oppdater fra API</button>
+        <a href="https://www.vinmonopolet.no/p/{{ w.nr }}" target="_blank" style="font-size:14px;font-weight:600">vinmonopolet.no →</a>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+<sc-if value="{{ isHistory }}" hint-placeholder-val="{{ false }}">
+<div style="padding:12px 20px 28px;display:flex;flex-direction:column;gap:18px">
+  <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Inn og ut</div>
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:44px;line-height:1;letter-spacing:-0.04em;text-transform:uppercase">Historikk</div>
+  <div style="display:flex;flex-direction:column;border-top:1px solid #6B8C6A">
+    <sc-for list="{{ hist }}" as="h" hint-placeholder-count="5">
+      <div style="display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid #F0EFE8">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+          <div style="font-size:11px;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;color:#4A403A">{{ h.label }} · {{ h.t }}</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:600;font-size:16px;line-height:1.2">{{ h.name }}</div>
+          <div style="font-size:13px;color:#4A403A">{{ h.sub }}</div>
+        </div>
+        <div style="{{ h.signStyle }}">{{ h.sign }}</div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+</div>
+<sc-if value="{{ scanOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:20;background:#1A1714;display:flex;flex-direction:column">
+  <div style="position:relative;flex:1;overflow:hidden;background:#2A2520">
+    <button onClick="{{ closeScan }}" style="position:absolute;top:58px;right:16px;z-index:2;width:44px;height:44px;border:0;border-radius:22px;background:rgba(250,250,245,0.15);color:#FAFAF5;cursor:pointer;display:flex;align-items:center;justify-content:center">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+    </button>
+    <div style="position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:260px;height:160px;border:2px solid #B8CEB7;border-radius:8px">
+      <sc-if value="{{ isCam }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;left:10px;right:10px;height:2px;background:#A87C28;box-shadow:0 0 12px #A87C28;animation:scanline 1.6s ease-in-out infinite"></div>
+      </sc-if>
+    </div>
+    <div style="position:absolute;left:0;right:0;top:calc(44% + 104px);display:flex;flex-direction:column;align-items:center;gap:18px">
+      <div style="font-size:14px;color:#FAFAF5">Hold strekkoden innenfor rammen</div>
+      <button onClick="{{ openSearch }}" style="height:44px;padding:0 18px;border:1px solid #B8CEB7;border-radius:22px;background:transparent;color:#FAFAF5;font-size:14px;font-weight:500;cursor:pointer">Søk i Vinmonopolet i stedet</button>
+    </div>
+  </div>
+  <sc-if value="{{ isRes }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;left:0;right:0;bottom:0;background:#FAFAF5;border-radius:16px 16px 0 0;padding:12px 20px 34px;display:flex;flex-direction:column;gap:18px;color:#2A2520">
+    <div style="align-self:center;width:36px;height:4px;border-radius:2px;background:#B8CEB7"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4E6B4D">Funnet på Vinmonopolet</div>
+      <sc-if value="{{ sHave }}" hint-placeholder-val="{{ true }}"><div style="font-size:12px;font-weight:600;color:#A87C28">{{ sw.qty }} i skapet</div></sc-if>
+      <sc-if value="{{ sNew }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;font-weight:600;color:#4A403A">Ny i skapet</div></sc-if>
+    </div>
+    <div style="display:flex;gap:14px;align-items:stretch">
+      <sc-if value="{{ hasSImg }}" hint-placeholder-val="{{ false }}"><div style="{{ sImgStyle }}"></div></sc-if>
+      <div style="{{ sw.swatch }}"></div>
+      <div style="display:flex;flex-direction:column;gap:3px;min-width:0">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:22px;line-height:1.1">{{ sw.name }}</div>
+        <div style="font-size:14px;color:#4A403A">{{ sw.sub }}</div>
+        <div style="font-size:13px;color:#4A403A">Varenr. {{ sw.nr }}</div>
+      </div>
+    </div>
+    <sc-if value="{{ sNew }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <sc-for list="{{ sTypes }}" as="t" hint-placeholder-count="4"><button onClick="{{ t.onPick }}" style="{{ t.style }}">{{ t.label }}</button></sc-for>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div style="font-size:14px;font-weight:500">Årgang</div>
+        <input value="{{ sYear }}" onChange="{{ onSYear }}" inputmode="numeric" placeholder="NV" style="width:96px;height:44px;padding:0 12px;border:1px solid #B8CEB7;border-radius:4px;background:#FFFFFF;font-size:15px;text-align:right;outline:0;color:#2A2520">
+      </div>
+    </div>
+    </sc-if>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid #F0EFE8;border-bottom:1px solid #F0EFE8">
+      <div style="font-size:14px;font-weight:500">Antall flasker</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button onClick="{{ decr }}" style="width:44px;height:44px;border:1px solid #B8CEB7;border-radius:22px;background:transparent;font-size:20px;cursor:pointer;color:#2A2520">−</button>
+        <div style="min-width:36px;text-align:center;font-family:'Syne',sans-serif;font-weight:700;font-size:22px">{{ sQty }}</div>
+        <button onClick="{{ inc }}" style="width:44px;height:44px;border:1px solid #B8CEB7;border-radius:22px;background:transparent;font-size:20px;cursor:pointer;color:#2A2520">+</button>
+      </div>
+    </div>
+    <div style="font-size:15px;font-weight:500">Hva vil du gjøre?</div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+      <sc-if value="{{ canOut }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ doOut }}" style="height:56px;border:1px solid #2A2520;border-radius:4px;background:transparent;color:#2A2520;font-size:15px;font-weight:600;cursor:pointer">Ta ut</button>
+      </sc-if>
+      <sc-if value="{{ sNew }}" hint-placeholder-val="{{ false }}">
+        <button disabled="disabled" style="height:56px;border:1px solid #F0EFE8;border-radius:4px;background:#F0EFE8;color:#4A403A;font-size:15px;font-weight:600">Ta ut</button>
+      </sc-if>
+      <button onClick="{{ doIn }}" style="height:56px;border:0;border-radius:4px;background:#4E6B4D;color:#FAFAF5;font-size:15px;font-weight:600;cursor:pointer">Sett inn</button>
+    </div>
+    <button onClick="{{ openSearch }}" style="align-self:center;height:36px;border:0;background:transparent;color:#4E6B4D;font-size:13px;font-weight:600;cursor:pointer">Feil vin? Søk i Vinmonopolet</button>
+  </div>
+  </sc-if>
+</div>
+</sc-if>
+<div style="display:flex;align-items:center;justify-content:space-around;padding:10px 24px 30px;border-top:1px solid #B8CEB7;background:#FAFAF5">
+  <button onClick="{{ tList.on }}" style="{{ tList.style }}">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>{{ tList.label }}
+  </button>
+  <button onClick="{{ startScan }}" style="width:64px;height:64px;margin-top:-30px;border:0;border-radius:32px;background:#2A2520;color:#FAFAF5;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 18px rgba(42,37,32,0.25)">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7V4h3M18 4h3v3M21 17v3h-3M6 20H3v-3"></path><path d="M7 8v8M10 8v8M13 8v8M16 8v8"></path></svg>
+  </button>
+  <button onClick="{{ tHist.on }}" style="{{ tHist.style }}">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg>{{ tHist.label }}
+  </button>
+</div>
+<sc-if value="{{ srOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:25;background:#FAFAF5;display:flex;flex-direction:column;padding-top:54px">
+  <div style="padding:12px 20px 12px;display:flex;flex-direction:column;gap:14px;border-bottom:1px solid #B8CEB7">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4E6B4D">Søk i Vinmonopolet</div>
+      <button onClick="{{ closeSearch }}" style="height:36px;padding:0 4px;border:0;background:transparent;color:#2A2520;font-size:14px;font-weight:500;cursor:pointer">Lukk</button>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div style="flex:1;display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;border:1px solid #B8CEB7;border-radius:4px;background:#FFFFFF">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A403A" stroke-width="1.6"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <input value="{{ srQ }}" onChange="{{ onSrQ }}" onKeyDown="{{ onSrKey }}" placeholder="Navn eller produsent" style="flex:1;border:0;outline:0;background:transparent;font-size:15px;color:#2A2520">
+      </div>
+      <button onClick="{{ runSearch }}" style="height:44px;padding:0 16px;border:0;border-radius:4px;background:#4E6B4D;color:#FAFAF5;font-size:14px;font-weight:600;cursor:pointer">Søk</button>
+    </div>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:0 20px 24px">
+    <sc-if value="{{ srLoading }}" hint-placeholder-val="{{ false }}"><div style="padding:32px 0;text-align:center;font-size:14px;color:#4A403A">Henter fra Vinmonopolet …</div></sc-if>
+    <sc-if value="{{ hasSrError }}" hint-placeholder-val="{{ false }}"><div style="margin-top:16px;padding:14px;border:1px solid #A04040;border-radius:4px;font-size:14px;line-height:1.5;color:#A04040">{{ srError }}</div></sc-if>
+    <sc-if value="{{ srDemo }}" hint-placeholder-val="{{ false }}"><div style="padding:14px 0 4px;font-size:12px;color:#A87C28;font-weight:500">Demo-data – legg inn API-nøkkel for ekte søk</div></sc-if>
+    <sc-if value="{{ srNone }}" hint-placeholder-val="{{ false }}"><div style="padding:32px 0;text-align:center;font-size:14px;color:#4A403A">Ingen treff.</div></sc-if>
+    <sc-for list="{{ srResults }}" as="r" hint-placeholder-count="0">
+      <div onClick="{{ r.onPick }}" style="display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid #F0EFE8;cursor:pointer">
+        <div style="{{ r.thumb }}"></div>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+          <div style="font-family:'Syne',sans-serif;font-weight:600;font-size:16px;line-height:1.2">{{ r.name }}</div>
+          <div style="font-size:13px;color:#4A403A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.sub }}</div>
+          <div style="font-size:12px;color:#4A403A">Varenr. {{ r.nr }}</div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A403A" stroke-width="1.6"><path d="M9 5l7 7-7 7"></path></svg>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+<sc-if value="{{ setOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:26;background:rgba(42,37,32,0.45);display:flex;flex-direction:column;justify-content:flex-end">
+  <div style="background:#FAFAF5;border-radius:16px 16px 0 0;padding:12px 20px 34px;display:flex;flex-direction:column;gap:16px">
+    <div style="align-self:center;width:36px;height:4px;border-radius:2px;background:#B8CEB7"></div>
+    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:22px;text-transform:uppercase">Vinmonopolet-API</div>
+    <div style="font-size:14px;line-height:1.5;color:#4A403A;text-wrap:pretty">Registrer deg på api.vinmonopolet.no, abonner på et produkt og lim inn nøkkelen. Den lagres bare på denne enheten.</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Subscription key</div>
+      <input value="{{ setKey }}" onChange="{{ onKey }}" placeholder="Ocp-Apim-Subscription-Key" style="height:44px;padding:0 14px;border:1px solid #B8CEB7;border-radius:4px;background:#FFFFFF;font-size:14px;outline:0;color:#2A2520">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Proxy-URL (valgfri)</div>
+      <input value="{{ setProxy }}" onChange="{{ onProxy }}" placeholder="https://din-backend.no/vmp" style="height:44px;padding:0 14px;border:1px solid #B8CEB7;border-radius:4px;background:#FFFFFF;font-size:14px;outline:0;color:#2A2520">
+      <div style="font-size:12px;color:#4A403A">Nettleseren kan blokkere direkte kall (CORS). Da må kallet gå via egen backend.</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+      <button onClick="{{ closeSettings }}" style="height:52px;border:1px solid #2A2520;border-radius:4px;background:transparent;color:#2A2520;font-size:15px;font-weight:600;cursor:pointer">Avbryt</button>
+      <button onClick="{{ saveSettings }}" style="height:52px;border:0;border-radius:4px;background:#4E6B4D;color:#FAFAF5;font-size:15px;font-weight:600;cursor:pointer">Lagre</button>
+    </div>
+  </div>
+</div>
+</sc-if>
+<sc-if value="{{ profileOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:26;background:rgba(42,37,32,0.45);display:flex;flex-direction:column;justify-content:flex-end">
+  <div style="background:#FAFAF5;border-radius:16px 16px 0 0;padding:12px 20px 34px;display:flex;flex-direction:column;gap:18px;max-height:88%;overflow-y:auto">
+    <div style="align-self:center;width:36px;height:4px;border-radius:2px;background:#B8CEB7"></div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="width:52px;height:52px;border-radius:26px;background:#4E6B4D;color:#FAFAF5;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:22px">{{ uInitial }}</div>
+      <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:20px">{{ uName }}</div>
+        <div style="font-size:13px;color:#4A403A">{{ uEmail }}</div>
+      </div>
+      <button onClick="{{ closeProfile }}" style="margin-left:auto;height:36px;border:0;background:transparent;color:#2A2520;font-size:14px;font-weight:500;cursor:pointer">Lukk</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="padding-bottom:6px;border-bottom:1px solid #6B8C6A;font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4E6B4D">Del skapet</div>
+      <div style="font-size:14px;line-height:1.5;color:#4A403A">De du inviterer kan se skapet og registrere flasker inn og ut.</div>
+      <sc-for list="{{ members }}" as="m" hint-placeholder-count="0">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #F0EFE8">
+          <div style="font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis">{{ m.email }}</div>
+          <button onClick="{{ m.remove }}" style="height:36px;border:0;background:transparent;color:#A04040;font-size:13px;font-weight:600;cursor:pointer">Fjern</button>
+        </div>
+      </sc-for>
+      <div style="display:flex;gap:8px">
+        <input value="{{ invite }}" onChange="{{ onInvite }}" placeholder="E-post" style="flex:1;min-width:0;height:44px;padding:0 14px;border:1px solid #B8CEB7;border-radius:4px;background:#FFFFFF;font-size:14px;outline:0;color:#2A2520">
+        <button onClick="{{ addMember }}" style="height:44px;padding:0 16px;border:0;border-radius:4px;background:#4E6B4D;color:#FAFAF5;font-size:14px;font-weight:600;cursor:pointer">Inviter</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column">
+      <div style="padding-bottom:6px;border-bottom:1px solid #6B8C6A;font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4E6B4D">Innstillinger</div>
+      <button onClick="{{ openApiFromProfile }}" style="display:flex;justify-content:space-between;align-items:center;height:48px;border:0;border-bottom:1px solid #F0EFE8;background:transparent;color:#2A2520;font-size:15px;cursor:pointer;padding:0">
+        <span>Vinmonopolet-API</span><span style="display:flex;align-items:center;gap:6px;font-size:13px;color:#4A403A"><span style="{{ apiDot }}"></span>{{ apiLabel }}</span>
+      </button>
+    </div>
+    <button onClick="{{ logout }}" style="height:52px;border:1px solid #2A2520;border-radius:4px;background:transparent;color:#2A2520;font-size:15px;font-weight:600;cursor:pointer">Logg ut</button>
+  </div>
+</div>
+</sc-if>
+<sc-if value="{{ loggedOut }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:40;background:#FAFAF5;display:flex;flex-direction:column;padding:72px 24px 40px;gap:28px;overflow-y:auto">
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <img src="./monogram-bg-sage.png" alt="B &amp; G" style="width:132px;height:132px;object-fit:contain;align-self:center;margin-bottom:8px">
+    <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Vinskap · Oversikt over kjelleren</div>
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:44px;line-height:1;letter-spacing:-0.04em;text-transform:uppercase">
+      <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">Logg inn</sc-if>
+      <sc-if value="{{ isRegister }}" hint-placeholder-val="{{ false }}">Aktiver konto</sc-if>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <sc-if value="{{ isRegister }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Navn</div>
+        <input value="{{ aName }}" onChange="{{ onAName }}" onKeyDown="{{ onAKey }}" autocomplete="name" style="height:48px;padding:0 14px;border:1px solid #B8CEB7;border-radius:4px;background:#FFFFFF;font-size:16px;outline:0;color:#2A2520">
+      </div>
+    </sc-if>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">E-post</div>
+      <input value="{{ aEmail }}" onChange="{{ onAEmail }}" onKeyDown="{{ onAKey }}" type="email" autocomplete="email" style="height:48px;padding:0 14px;border:1px solid #B8CEB7;border-radius:4px;background:#FFFFFF;font-size:16px;outline:0;color:#2A2520">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Passord</div>
+      <input value="{{ aPw }}" onChange="{{ onAPw }}" onKeyDown="{{ onAKey }}" type="password" autocomplete="current-password" placeholder="Minst 8 tegn" style="height:48px;padding:0 14px;border:1px solid #B8CEB7;border-radius:4px;background:#FFFFFF;font-size:16px;outline:0;color:#2A2520">
+    </div>
+    <sc-if value="{{ hasAErr }}" hint-placeholder-val="{{ false }}"><div style="font-size:14px;color:#A04040">{{ aErr }}</div></sc-if>
+    <button onClick="{{ submitAuth }}" style="height:56px;border:0;border-radius:4px;background:#4E6B4D;color:#FAFAF5;font-size:16px;font-weight:600;cursor:pointer">{{ aBtn }}</button>
+  </div>
+  <div style="display:flex;justify-content:center;gap:6px;font-size:14px;color:#4A403A">
+    <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}"><span>Fått invitasjon?</span><button onClick="{{ toRegister }}" style="border:0;background:transparent;padding:0;color:#4E6B4D;font-size:14px;font-weight:600;cursor:pointer">Aktiver konto</button></sc-if>
+    <sc-if value="{{ isRegister }}" hint-placeholder-val="{{ false }}"><span>Har du konto?</span><button onClick="{{ toLogin }}" style="border:0;background:transparent;padding:0;color:#4E6B4D;font-size:14px;font-weight:600;cursor:pointer">Logg inn</button></sc-if>
+  </div>
+</div>
+</sc-if>
+<sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;left:20px;right:20px;bottom:112px;padding:14px 16px;border-radius:4px;background:#2A2520;color:#FAFAF5;font-size:14px;font-weight:500;z-index:30">{{ toast }}</div>
+</sc-if>
+</div>
+</x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;listView&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Rader&quot;,&quot;Kort&quot;,&quot;Drikkevindu&quot;],&quot;default&quot;:&quot;Rader&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const NOW=2026;
+const TC={'Rødvin':'#7A3A3A','Hvitvin':'#C9B878','Musserende':'#B8CEB7','Rosévin':'#D49A8F'};
+const kr=n=>'kr '+String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+const stat=w=>NOW<w.from?{l:'Lagres til '+w.from,c:'#4A403A'}:NOW>=w.to?{l:'Drikk nå · siste år',c:'#A04040'}:{l:'Drikk nå · til '+w.to,c:'#A87C28'};
+const D=()=>window.VINSKAP_DATA||{wines:[],log:[],lookup:{}};
+class Component extends DCLogic {
+  state={screen:'list',wines:D().wines,log:D().log,sel:null,q:'',filter:'Alle',scan:null,toast:null,
+    user:null,auth:{mode:'login',name:'',email:'',pw:'',err:null,busy:false},profile:false,invite:''};
+  // Lokal "brukerdatabase" i prototypen (localStorage). I produksjon: Supabase Auth + Postgres.
+  db(){try{return JSON.parse(localStorage.getItem('vinskap.users')||'{}');}catch(e){return {};}}
+  async hash(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
+  loadData(email){try{const d=JSON.parse(localStorage.getItem('vinskap.data.'+email)||'null');if(d)return d;}catch(e){}return {wines:D().wines,log:D().log};}
+  componentDidMount(){const e=localStorage.getItem('vinskap.session');const u=e&&this.db()[e];if(u){const d=this.loadData(e);this.setState({user:{email:e,name:u.name,members:u.members||[]},wines:d.wines,log:d.log});}}
+  componentDidUpdate(pp,ps){const s=this.state;if(s.user&&(ps.wines!==s.wines||ps.log!==s.log))localStorage.setItem('vinskap.data.'+s.user.email,JSON.stringify({wines:s.wines,log:s.log}));}
+  async submitAuth(){const a=this.state.auth;const email=a.email.trim().toLowerCase();
+    if(!/^\S+@\S+\.\S+$/.test(email))return this.setAuth({err:'Skriv inn en gyldig e-postadresse.'});
+    if(a.pw.length<8)return this.setAuth({err:'Passordet må ha minst 8 tegn.'});
+    this.setAuth({busy:true,err:null});const db=this.db();const h=await this.hash(email+':'+a.pw);
+    if(a.mode==='register'){if(db[email])return this.setAuth({busy:false,err:'Det finnes allerede en konto med denne e-posten.'});
+      let inv=[];try{inv=JSON.parse(localStorage.getItem('vinskap.invites')||'[]');}catch(x){}
+      if(!inv.includes(email))return this.setAuth({busy:false,err:'Denne e-posten er ikke invitert. Be administrator om en invitasjon.'});
+      localStorage.setItem('vinskap.invites',JSON.stringify(inv.filter(x=>x!==email)));
+      if(!a.name.trim())return this.setAuth({busy:false,err:'Skriv inn navnet ditt.'});
+      db[email]={name:a.name.trim(),pw:h,members:[],created:Date.now()};localStorage.setItem('vinskap.users',JSON.stringify(db));}
+    else if(!db[email]||db[email].pw!==h)return this.setAuth({busy:false,err:'Feil e-post eller passord.'});
+    localStorage.setItem('vinskap.session',email);const d=this.loadData(email);
+    this.setState({user:{email,name:db[email].name,members:db[email].members||[]},wines:d.wines,log:d.log,screen:'list',auth:{mode:'login',name:'',email:'',pw:'',err:null,busy:false}});
+    this.flash('Velkommen, '+db[email].name.split(' ')[0]);}
+  setAuth(p){this.setState(s=>({auth:{...s.auth,...p}}));}
+  logout(){localStorage.removeItem('vinskap.session');this.setState({user:null,profile:false,scan:null,search:null,settings:null});}
+  addMember(){const e=this.state.invite.trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(e))return;const u=this.state.user;if(u.members.includes(e)||e===u.email)return;
+    const db=this.db();const m=[...u.members,e];if(db[u.email]){db[u.email].members=m;localStorage.setItem('vinskap.users',JSON.stringify(db));}
+    this.setState({user:{...u,members:m},invite:''});this.flash('Invitasjon sendt til '+e);}
+  removeMember(e){const u=this.state.user;const db=this.db();const m=u.members.filter(x=>x!==e);if(db[u.email]){db[u.email].members=m;localStorage.setItem('vinskap.users',JSON.stringify(db));}this.setState({user:{...u,members:m}});}
+  vmp=()=>window.VMP;
+  openSettings(){const v=this.vmp();this.setState({settings:{key:v?v.getKey():'',proxy:v?v.getProxy():''}});}
+  saveSettings(){const v=this.vmp(),s=this.state.settings;if(v){v.setKey(s.key.trim());v.setProxy(s.proxy.trim());}this.setState({settings:null});this.flash(v&&v.configured()?'Vinmonopolet-API koblet til':'API-nøkkel fjernet · demo-data');}
+  openSearch(q){clearTimeout(this.t2);this.setState({scan:null,search:{q:q||'',loading:false,results:[],error:null,demo:false,done:false}});}
+  async runSearch(){const s=this.state.search;if(!s||!s.q.trim())return;const v=this.vmp();this.setState({search:{...s,loading:true,error:null}});
+    if(!v||!v.configured()){const q=s.q.toLowerCase();const pool=D().wines.concat([D().lookup]);
+      setTimeout(()=>this.setState(p=>({search:{...p.search,loading:false,done:true,demo:true,results:pool.filter(w=>(w.name+' '+w.producer).toLowerCase().includes(q))}})),500);return;}
+    try{const r=await v.search(s.q.trim());this.setState(p=>({search:{...p.search,loading:false,done:true,demo:false,results:r}}));}
+    catch(e){this.setState(p=>({search:{...p.search,loading:false,done:true,error:e.message,results:[]}}));}}
+  async pickResult(w){const v=this.vmp();let full=w;
+    if(v&&v.configured()&&w.nr){try{full=(await v.byId(w.nr))||w;}catch(e){}}
+    const have=this.state.wines.find(x=>x.nr&&x.nr===full.nr);
+    this.setState({search:null,scan:{phase:'res',wine:have||{...full,id:null,qty:0,type:full.type||'Rødvin'},isNew:!have,qty:1}});}
+  setScanWine(patch){this.setState(p=>({scan:{...p.scan,wine:{...p.scan.wine,...patch}}}));}
+  async refreshSel(){const v=this.vmp();const w=this.state.wines.find(x=>x.id===this.state.sel);if(!w)return;
+    if(!v||!v.configured()){this.flash('Legg inn API-nøkkel i innstillinger');return;}
+    try{const f=await v.byId(w.nr);if(!f){this.flash('Fant ikke varenr. '+w.nr);return;}
+      this.setState(p=>({wines:p.wines.map(x=>x.id===w.id?{...x,name:f.name||x.name,img:f.img}:x)}));this.flash('Oppdatert fra Vinmonopolet');}
+    catch(e){this.flash(e.message);}}
+  componentWillUnmount(){clearTimeout(this.t1);clearTimeout(this.t2);}
+  flash(m){clearTimeout(this.t1);this.setState({toast:m});this.t1=setTimeout(()=>this.setState({toast:null}),2400);}
+  startScan(){clearTimeout(this.t2);this.setState({scan:{phase:'cam'}});
+    this.t2=setTimeout(()=>{const ws=this.state.wines;const hit=Math.random()<0.65&&ws.length?ws[Math.floor(Math.random()*ws.length)]:null;
+      this.setState({scan:{phase:'res',wine:hit||D().lookup,isNew:!hit,qty:1}});},1700);}
+  commit(dir){const {scan,wines,log}=this.state;const w=scan.wine;let ws=wines,wid=w.id;
+    if(dir==='inn'){if(scan.isNew){wid=Math.max(0,...ws.map(x=>x.id))+1;ws=[...ws,{...w,id:wid,qty:scan.qty}];}else ws=ws.map(x=>x.id===wid?{...x,qty:x.qty+scan.qty}:x);}
+    else ws=ws.map(x=>x.id===wid?{...x,qty:x.qty-scan.qty}:x).filter(x=>x.qty>0);
+    const t=new Date().toTimeString().slice(0,5);
+    this.setState({wines:ws,scan:null,log:[{id:Date.now(),wid,dir,qty:scan.qty,t:'I dag · '+t,snap:w},...log]});
+    this.flash((dir==='inn'?'Satt inn ':'Tatt ut ')+scan.qty+' × '+w.name);}
+  renderVals(){
+    const s=this.state;const view=this.props.listView??'Rader';const all=D().wines.concat([D().lookup]);
+    const open=id=>()=>this.setState({screen:'detail',sel:id});
+    const dec=w=>{const st=stat(w);return{...w,yr:w.year||'NV',sub:[w.producer,w.year||'NV',w.region].filter(Boolean).join(' · '),dl:st.l,
+      dlStyle:{fontSize:12,fontWeight:500,color:st.c},onOpen:open(w.id),
+      swatch:w.img?{width:40,height:60,flexShrink:0,borderRadius:4,background:'#FFFFFF url('+w.img+') center/contain no-repeat',boxShadow:'inset 3px 0 0 '+(TC[w.type]||'#A87C28')}:{width:6,alignSelf:'stretch',minHeight:48,borderRadius:2,background:TC[w.type]||'#A87C28',flexShrink:0},
+      bottle:{width:'100%',height:'100%',background:w.img?'url('+w.img+') center/contain no-repeat':'none'},
+      cardTop:{height:96,padding:12,display:'flex',flexDirection:'column',justifyContent:'space-between',background:TC[w.type]||'#A87C28'}};};
+    const f=s.wines.filter(w=>{const h=(w.name+' '+w.producer+' '+w.region+' '+w.grape).toLowerCase();
+      if(s.q&&!h.includes(s.q.toLowerCase()))return false;if(s.filter==='Drikk nå')return NOW>=w.from;if(s.filter!=='Alle')return w.type===s.filter;return true;}).map(dec);
+    const types=['Rødvin','Hvitvin','Musserende','Rosévin'];
+    const groups=types.map(t=>({label:t,items:f.filter(w=>w.type===t)})).filter(g=>g.items.length).map(g=>({...g,count:g.items.reduce((a,w)=>a+w.qty,0)+' fl.'}));
+    const ready=f.filter(w=>NOW>=w.from).sort((a,b)=>a.to-b.to);const later=f.filter(w=>NOW<w.from).sort((a,b)=>a.from-b.from);
+    const chip=(l)=>({label:l,onPick:()=>this.setState({filter:l}),style:{flexShrink:0,height:34,padding:'0 14px',borderRadius:17,fontSize:13,fontWeight:500,cursor:'pointer',
+      border:'1px solid '+(s.filter===l?'#4E6B4D':'#B8CEB7'),background:s.filter===l?'#4E6B4D':'transparent',color:s.filter===l?'#FAFAF5':'#2A2520'}});
+    const sel=s.wines.find(w=>w.id===s.sel)||all.find(w=>w.id===s.sel);const sw=sel?dec(sel):null;
+    const hist=s.log.map(e=>{const w=e.snap||s.wines.find(x=>x.id===e.wid)||all.find(x=>x.id===e.wid)||{name:'Ukjent',producer:''};
+      return{...e,name:w.name,sub:w.producer+' · '+(w.year||'NV'),sign:(e.dir==='inn'?'+':'−')+e.qty,label:e.dir==='inn'?'Satt inn':'Tatt ut',
+      signStyle:{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:20,color:e.dir==='inn'?'#4E6B4D':'#A04040',minWidth:36,textAlign:'right'}};});
+    const tab=(k,l)=>({label:l,on:()=>this.setState({screen:k}),style:{display:'flex',flexDirection:'column',alignItems:'center',gap:4,background:'none',border:0,cursor:'pointer',
+      fontSize:10,fontWeight:500,letterSpacing:'0.18em',textTransform:'uppercase',color:(s.screen===k||(k==='list'&&s.screen==='detail'))?'#4E6B4D':'#4A403A',minWidth:64,height:44,justifyContent:'center'}});
+    const sc=s.scan;const heroImg=sw&&sw.img?{width:120,height:180,background:'url('+sw.img+') center/contain no-repeat',flexShrink:0}:{display:'none'};
+    const setQ=d=>()=>this.setState(p=>({scan:{...p.scan,qty:Math.max(1,Math.min(24,p.scan.qty+d))}}));
+    return{
+      isList:s.screen==='list',isDetail:s.screen==='detail'&&!!sw,isHistory:s.screen==='history',
+      total:s.wines.reduce((a,w)=>a+w.qty,0),wineCount:s.wines.length,readyCount:s.wines.filter(w=>NOW>=w.from).reduce((a,w)=>a+w.qty,0),
+      value:kr(s.wines.reduce((a,w)=>a+w.qty*w.price,0)),
+      q:s.q,onQ:e=>this.setState({q:e.target.value}),filters:['Alle',...types].map(chip),
+      isRows:view==='Rader',isCards:view==='Kort',isWindow:view==='Drikkevindu',
+      groups,flat:f,ready,later,hasReady:ready.length>0,hasLater:later.length>0,isEmpty:f.length===0,
+      w:sw||{},wPrice:sw?kr(sw.price):'',wValue:sw?kr(sw.price*sw.qty):'',wHist:sw?hist.filter(h=>h.wid===sw.id).slice(0,3):[],
+      back:()=>this.setState({screen:'list'}),heroImg,
+      takeOut:()=>{if(!sel)return;this.setState({scan:{phase:'res',wine:sel,isNew:false,qty:1}});},
+      putIn:()=>{if(!sel)return;this.setState({scan:{phase:'res',wine:sel,isNew:false,qty:1}});},
+      hist,
+      tList:tab('list','Skapet'),tHist:tab('history','Historikk'),startScan:()=>this.startScan(),
+      scanOpen:!!sc,isCam:!!sc&&sc.phase==='cam',isRes:!!sc&&sc.phase==='res',
+      sw:sc&&sc.wine?dec(sc.wine):{},sNew:!!sc&&sc.isNew,sHave:!!sc&&!sc.isNew,sQty:sc?sc.qty:1,sPrice:sc&&sc.wine?kr(sc.wine.price):'',
+      canOut:!!sc&&!sc.isNew,inc:setQ(1),decr:setQ(-1),
+      closeScan:()=>{clearTimeout(this.t2);this.setState({scan:null});},
+      doIn:()=>this.commit('inn'),doOut:()=>this.commit('ut'),
+      toast:s.toast,hasToast:!!s.toast,
+      apiOn:!!(window.VMP&&window.VMP.configured()),apiLabel:(window.VMP&&window.VMP.configured())?'Vinmonopolet · tilkoblet':'Vinmonopolet · demo-data',
+      apiDot:{width:8,height:8,borderRadius:4,background:(window.VMP&&window.VMP.configured())?'#4E6B4D':'#A87C28'},
+      openSettings:()=>this.openSettings(),setOpen:!!s.settings,setKey:s.settings?s.settings.key:'',setProxy:s.settings?s.settings.proxy:'',
+      onKey:e=>{const v=e.target.value;this.setState(p=>({settings:{...p.settings,key:v}}));},
+      onProxy:e=>{const v=e.target.value;this.setState(p=>({settings:{...p.settings,proxy:v}}));},
+      saveSettings:()=>this.saveSettings(),closeSettings:()=>this.setState({settings:null}),
+      openSearch:()=>this.openSearch(''),srOpen:!!s.search,srQ:s.search?s.search.q:'',
+      onSrQ:e=>{const v=e.target.value;this.setState(p=>({search:{...p.search,q:v}}));},
+      onSrKey:e=>{if(e.key==='Enter')this.runSearch();},runSearch:()=>this.runSearch(),closeSearch:()=>this.setState({search:null}),
+      srLoading:!!(s.search&&s.search.loading),srError:s.search?s.search.error:null,hasSrError:!!(s.search&&s.search.error),
+      srDemo:!!(s.search&&s.search.demo&&!s.search.loading),
+      srNone:!!(s.search&&s.search.done&&!s.search.loading&&!s.search.error&&!s.search.results.length),
+      srResults:s.search?s.search.results.map(r=>{const d=dec(r);return{...d,onPick:()=>this.pickResult(r),
+        thumb:r.img?{width:40,height:60,flexShrink:0,borderRadius:4,background:'#FFFFFF url('+r.img+') center/contain no-repeat'}:d.swatch};}):[],
+      refreshSel:()=>this.refreshSel(),
+      loggedOut:!s.user,isLogin:s.auth.mode==='login',isRegister:s.auth.mode==='register',
+      aName:s.auth.name,aEmail:s.auth.email,aPw:s.auth.pw,aErr:s.auth.err,hasAErr:!!s.auth.err,
+      aBtn:s.auth.busy?'Vent …':(s.auth.mode==='login'?'Logg inn':'Aktiver konto'),
+      onAName:e=>this.setAuth({name:e.target.value}),onAEmail:e=>this.setAuth({email:e.target.value}),onAPw:e=>this.setAuth({pw:e.target.value}),
+      onAKey:e=>{if(e.key==='Enter')this.submitAuth();},submitAuth:()=>this.submitAuth(),
+      toRegister:()=>this.setAuth({mode:'register',err:null}),toLogin:()=>this.setAuth({mode:'login',err:null}),
+      uName:s.user?s.user.name:'',uEmail:s.user?s.user.email:'',uInitial:s.user?s.user.name.charAt(0).toUpperCase():'',
+      openProfile:()=>this.setState({profile:true}),closeProfile:()=>this.setState({profile:false}),profileOpen:!!s.profile&&!!s.user,
+      logout:()=>this.logout(),invite:s.invite,onInvite:e=>this.setState({invite:e.target.value}),addMember:()=>this.addMember(),
+      members:s.user?s.user.members.map(m=>({email:m,remove:()=>this.removeMember(m)})):[],hasMembers:!!(s.user&&s.user.members.length),
+      openApiFromProfile:()=>{this.setState({profile:false});this.openSettings();},
+      hasSImg:!!(sc&&sc.wine&&sc.wine.img),
+      sImgStyle:{width:56,height:84,flexShrink:0,borderRadius:4,background:'#FFFFFF url('+(sc&&sc.wine&&sc.wine.img||'')+') center/contain no-repeat'},
+      sTypes:types.map(t=>({label:t,onPick:()=>this.setScanWine({type:t}),style:{height:34,padding:'0 12px',borderRadius:17,fontSize:13,fontWeight:500,cursor:'pointer',
+        border:'1px solid '+(sc&&sc.wine&&sc.wine.type===t?'#4E6B4D':'#B8CEB7'),background:sc&&sc.wine&&sc.wine.type===t?'#4E6B4D':'transparent',color:sc&&sc.wine&&sc.wine.type===t?'#FAFAF5':'#2A2520'}})),
+      sYear:sc&&sc.wine&&sc.wine.year?String(sc.wine.year):'',
+      onSYear:e=>{const y=parseInt(e.target.value,10);this.setScanWine({year:y>1900?y:null,from:y>1900?y+2:NOW,to:y>1900?y+10:NOW+5});}
+    };
+  }
+}
+</script>
+</body>
+</html>

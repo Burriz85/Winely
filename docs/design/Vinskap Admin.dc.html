@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&amp;family=Figtree:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<script src="./admin-data.js"></script>
+<style>
+body{margin:0;background:#FAFAF5;font-family:'Figtree',sans-serif;color:#2A2520;-webkit-font-smoothing:antialiased}
+a{color:#4E6B4D;text-decoration:none}a:hover{color:#6B8C6A}
+input,button,select{font-family:'Figtree',sans-serif}
+*{box-sizing:border-box}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-direction:row;flex-wrap:wrap;background:#FAFAF5">
+  <nav style="{{ navStyle }}">
+    <div style="display:flex;align-items:center;gap:10px;padding:4px 8px">
+      <img src="./monogram-bg-sage.png" alt="B &amp; G" style="width:36px;height:36px;object-fit:contain">
+      <div style="display:flex;flex-direction:column">
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;text-transform:uppercase;letter-spacing:-0.02em">Vinskap</div>
+        <div style="font-size:10px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Admin</div>
+      </div>
+    </div>
+    <div style="{{ navListStyle }}">
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="7">
+        <button onClick="{{ n.go }}" style="{{ n.style }}"><span>{{ n.label }}</span><sc-if value="{{ n.hasBadge }}" hint-placeholder-val="{{ false }}"><span style="{{ n.badgeStyle }}">{{ n.badge }}</span></sc-if></button>
+      </sc-for>
+    </div>
+  </nav>
+  <main style="flex:1;min-width:0;padding:32px clamp(16px,4vw,48px) 64px;display:flex;flex-direction:column;gap:28px">
+    <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:28px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Tjenesten · i dag</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(32px,5vw,48px);line-height:1;letter-spacing:-0.04em;text-transform:uppercase">Oversikt</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border-top:1px solid #B8CEB7;border-bottom:1px solid #B8CEB7">
+        <div style="padding:16px 16px 16px 0;display:flex;flex-direction:column;gap:4px"><div style="font-size:10px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Aktive brukere</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:28px">{{ stUsers }}</div><div style="font-size:12px;color:#A87C28;font-weight:500">+{{ stInvited }} invitert</div></div>
+        <div style="padding:16px;border-left:1px solid #B8CEB7;display:flex;flex-direction:column;gap:4px"><div style="font-size:10px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Skap</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:28px">{{ stCellars }}</div></div>
+        <div style="padding:16px;border-left:1px solid #B8CEB7;display:flex;flex-direction:column;gap:4px"><div style="font-size:10px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Flasker</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:28px">{{ stBottles }}</div><div style="font-size:12px;color:#4A403A">{{ stValue }}</div></div>
+        <div style="padding:16px;border-left:1px solid #B8CEB7;display:flex;flex-direction:column;gap:4px"><div style="font-size:10px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Skann · 14 dager</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:28px">{{ stScans }}</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="padding-bottom:6px;border-bottom:1px solid #6B8C6A;font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4E6B4D">Skann per dag</div>
+          <div style="display:flex;align-items:flex-end;gap:4px;height:140px">
+            <sc-for list="{{ bars }}" as="b" hint-placeholder-count="14"><div title="{{ b.v }}" style="{{ b.style }}"></div></sc-for>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:#4A403A"><span>13. sep</span><span>I dag</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="padding-bottom:6px;border-bottom:1px solid #6B8C6A;font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4E6B4D">Trenger oppfølging</div>
+          <sc-for list="{{ todo }}" as="t" hint-placeholder-count="3">
+            <button onClick="{{ t.go }}" style="display:flex;justify-content:space-between;align-items:center;height:48px;padding:0 14px;border:1px solid #B8CEB7;border-radius:4px;background:#FFFFFF;color:#2A2520;font-size:14px;font-weight:500;cursor:pointer;text-align:left">
+              <span>{{ t.label }}</span><span style="color:#4E6B4D">→</span>
+            </button>
+          </sc-for>
+          <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#F0EFE8;border-radius:4px;font-size:14px">
+            <span style="width:8px;height:8px;border-radius:4px;background:#4E6B4D"></span>Vinmonopolet-API · {{ api.latency }} ms · {{ api.calls24h }} kall siste døgn
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column">
+        <div style="padding-bottom:6px;border-bottom:1px solid #6B8C6A;font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4E6B4D">Siste aktivitet</div>
+        <sc-for list="{{ recent }}" as="a" hint-placeholder-count="5">
+          <div style="display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px;padding:12px 0;border-bottom:1px solid #F0EFE8;font-size:14px">
+            <div style="color:#4A403A">{{ a.t }}</div>
+            <div><span style="font-weight:600">{{ a.who }}</span> · {{ a.what }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+    <sc-if value="{{ isUsers }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Kun på invitasjon</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(32px,5vw,48px);line-height:1;letter-spacing:-0.04em;text-transform:uppercase">Brukere</div>
+        </div>
+        <button onClick="{{ openInvite }}" style="{{ btnP }}">+ Inviter bruker</button>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <div style="flex:1;min-width:220px;display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;border:1px solid #B8CEB7;border-radius:4px;background:#FFFFFF">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A403A" stroke-width="1.6"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+          <input value="{{ uq }}" onChange="{{ onUq }}" placeholder="Søk på navn eller e-post" style="flex:1;border:0;outline:0;background:transparent;font-size:15px;color:#2A2520">
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <sc-for list="{{ uFilters }}" as="f" hint-placeholder-count="4"><button onClick="{{ f.go }}" style="{{ f.style }}">{{ f.label }}</button></sc-for>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;border-top:1px solid #6B8C6A">
+        <sc-for list="{{ userRows }}" as="u" hint-placeholder-count="5">
+          <div onClick="{{ u.open }}" style="{{ u.rowStyle }}">
+            <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+              <div style="font-family:'Syne',sans-serif;font-weight:600;font-size:16px">{{ u.name }}</div>
+              <div style="font-size:13px;color:#4A403A;overflow:hidden;text-overflow:ellipsis">{{ u.email }}</div>
+            </div>
+            <div style="{{ u.metaStyle }}">Skap: {{ u.cellarNames }} · {{ u.bottles }} fl.</div>
+            <div style="{{ u.metaStyle }}">Sist aktiv: {{ u.last }}</div>
+            <div style="display:flex;justify-content:flex-end"><span style="{{ u.pill }}">{{ u.status }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+    <sc-if value="{{ isCellars }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Alle skap · kun lesing</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(32px,5vw,48px);line-height:1;letter-spacing:-0.04em;text-transform:uppercase">Skap</div>
+      </div>
+      <div style="display:flex;flex-direction:column;border-top:1px solid #6B8C6A">
+        <sc-for list="{{ cellarRows }}" as="c" hint-placeholder-count="4">
+          <div onClick="{{ c.open }}" style="{{ c.style }}">
+            <div style="display:flex;flex-direction:column;gap:2px"><div style="font-family:'Syne',sans-serif;font-weight:600;font-size:16px">{{ c.name }}</div><div style="font-size:13px;color:#4A403A">Eier: {{ c.ownerName }}</div></div>
+            <div style="font-size:13px;color:#4A403A">{{ c.memberCount }} medlem(mer)</div>
+            <div style="font-size:13px;color:#4A403A">{{ c.bottles }} fl. · {{ c.wines }} viner</div>
+            <div style="font-size:13px;font-weight:600;text-align:right">{{ c.valueL }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <sc-if value="{{ hasCellar }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:18px;padding:20px;background:#F0EFE8;border-radius:4px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;text-transform:uppercase;letter-spacing:-0.03em">{{ sc.name }}</div>
+            <div style="font-size:13px;color:#4A403A">{{ sc.bottles }} flasker · {{ sc.valueL }} · oppdatert {{ sc.updated }}</div>
+          </div>
+          <button onClick="{{ closeCellar }}" style="height:36px;border:0;background:transparent;font-size:14px;font-weight:500;cursor:pointer;color:#2A2520">Lukk</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <sc-for list="{{ scMembers }}" as="m" hint-placeholder-count="2">
+            <button onClick="{{ m.open }}" style="height:32px;padding:0 12px;border:1px solid #B8CEB7;border-radius:16px;background:#FAFAF5;font-size:13px;cursor:pointer;color:#2A2520">{{ m.name }} · {{ m.role }}</button>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;background:#FAFAF5;border-radius:4px;padding:0 14px">
+          <sc-for list="{{ scItems }}" as="i" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #F0EFE8">
+              <div style="{{ i.img }}"></div>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:600">{{ i.name }}</span><span style="font-size:12px;color:#4A403A">Varenr. {{ i.nr }}</span></div>
+              <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px">×{{ i.qty }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+    </div>
+    </sc-if>
+    <sc-if value="{{ isEans }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Strekkode → varenummer</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(32px,5vw,48px);line-height:1;letter-spacing:-0.04em;text-transform:uppercase">Strekkoder</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;border:1px solid #B8CEB7;border-radius:4px;background:#FFFFFF;max-width:480px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A403A" stroke-width="1.6"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <input value="{{ eq }}" onChange="{{ onEq }}" placeholder="Strekkode, varenr. eller navn" style="flex:1;border:0;outline:0;background:transparent;font-size:15px;color:#2A2520">
+      </div>
+      <div style="display:flex;flex-direction:column;border-top:1px solid #6B8C6A">
+        <sc-for list="{{ eanRows }}" as="e" hint-placeholder-count="5">
+          <div style="{{ e.rowStyle }}">
+            <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:ui-monospace,monospace;font-size:14px">{{ e.ean }}</span><span style="font-size:12px;color:#A04040;font-weight:500">{{ e.note }}</span></div>
+            <sc-if value="{{ e.notEditing }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:600">{{ e.name }}</span><span style="font-size:12px;color:#4A403A">Varenr. {{ e.nr }}</span></div>
+            </sc-if>
+            <sc-if value="{{ e.editing }}" hint-placeholder-val="{{ false }}">
+              <input value="{{ editNr }}" onChange="{{ onEditNr }}" placeholder="Varenummer" style="height:40px;padding:0 12px;border:1px solid #4E6B4D;border-radius:4px;background:#FFFFFF;font-size:14px;outline:0;color:#2A2520">
+            </sc-if>
+            <div style="font-size:13px;color:#4A403A">{{ e.byName }} · {{ e.date }} · {{ e.hits }} skann</div>
+            <div style="{{ e.actStyle }}">
+              <sc-if value="{{ e.notEditing }}" hint-placeholder-val="{{ true }}">
+                <sc-if value="{{ e.flag }}" hint-placeholder-val="{{ false }}"><button onClick="{{ e.keep }}" style="{{ btnP }}">Behold denne</button></sc-if>
+                <button onClick="{{ e.edit }}" style="{{ btnS }}">Endre</button>
+                <button onClick="{{ e.remove }}" style="{{ btnD }}">Fjern</button>
+              </sc-if>
+              <sc-if value="{{ e.editing }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ cancelEan }}" style="{{ btnS }}">Avbryt</button>
+                <button onClick="{{ saveEan }}" style="{{ btnP }}">Lagre</button>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+    <sc-if value="{{ isDupes }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Mulige dobbeltregistreringer</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(32px,5vw,48px);line-height:1;letter-spacing:-0.04em;text-transform:uppercase">Duplikater</div>
+      </div>
+      <div style="font-size:14px;line-height:1.5;color:#4A403A;max-width:620px">Når to viner slås sammen, flyttes beholdning, historikk og strekkoder til vinen til venstre. Den til høyre slettes.</div>
+      <sc-if value="{{ noDupes }}" hint-placeholder-val="{{ false }}"><div style="padding:32px 0;font-size:15px;color:#4A403A">Ingen duplikater å se på.</div></sc-if>
+      <sc-for list="{{ dupeRows }}" as="d" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:14px;padding:18px;border:1px solid #B8CEB7;border-radius:4px">
+          <div style="font-size:12px;font-weight:600;color:#A87C28">{{ d.reason }}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;align-items:stretch">
+            <div style="display:flex;flex-direction:column;gap:4px;padding:14px;background:#E4ECE3;border-radius:4px">
+              <div style="font-size:10px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4E6B4D">Beholdes</div>
+              <div style="font-size:15px;font-weight:600">{{ d.a.name }}</div>
+              <div style="font-size:13px;color:#4A403A">{{ d.aNr }} · {{ d.a.cellars }} skap · {{ d.a.bottles }} fl.</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;padding:14px;background:#F0EFE8;border-radius:4px">
+              <div style="font-size:10px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Slås inn</div>
+              <div style="font-size:15px;font-weight:600">{{ d.b.name }}</div>
+              <div style="font-size:13px;color:#4A403A">{{ d.bNr }} · {{ d.b.cellars }} skap · {{ d.b.bottles }} fl.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+            <button onClick="{{ d.ignore }}" style="{{ btnS }}">Ikke duplikat</button>
+            <button onClick="{{ d.merge }}" style="{{ btnP }}">Slå sammen</button>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+    <sc-if value="{{ isActivity }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Alle hendelser</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(32px,5vw,48px);line-height:1;letter-spacing:-0.04em;text-transform:uppercase">Aktivitet</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ actFilters }}" as="f" hint-placeholder-count="5"><button onClick="{{ f.go }}" style="{{ f.style }}">{{ f.label }}</button></sc-for></div>
+      <div style="display:flex;flex-direction:column;border-top:1px solid #6B8C6A">
+        <sc-for list="{{ actRows }}" as="a" hint-placeholder-count="6">
+          <div style="display:grid;grid-template-columns:100px 96px minmax(0,1fr);gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #F0EFE8;font-size:14px">
+            <div style="color:#4A403A;font-size:13px">{{ a.t }}</div>
+            <div><span style="{{ a.tagStyle }}">{{ a.tag }}</span></div>
+            <div><span style="font-weight:600">{{ a.who }}</span> · {{ a.what }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+    <sc-if value="{{ isApi }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Vinmonopolet · products v0</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(32px,5vw,48px);line-height:1;letter-spacing:-0.04em;text-transform:uppercase">API-status</div>
+        </div>
+        <button onClick="{{ testApi }}" style="{{ btnP }}">Test tilkobling nå</button>
+      </div>
+      <sc-if value="{{ hasApiTest }}" hint-placeholder-val="{{ false }}"><div style="padding:12px 14px;background:#F0EFE8;border-radius:4px;font-size:14px">{{ apiTest }}</div></sc-if>
+      <div style="display:flex;align-items:center;gap:12px;padding:18px;border:1px solid #6B8C6A;border-radius:4px">
+        <span style="width:12px;height:12px;border-radius:6px;background:#4E6B4D"></span>
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px">Tilkoblet</span><span style="font-size:13px;color:#4A403A">Svartid {{ api.latency }} ms · nattlig oppdatering {{ api.lastSync }}</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border-top:1px solid #B8CEB7;border-bottom:1px solid #B8CEB7">
+        <div style="padding:16px 16px 16px 0;display:flex;flex-direction:column;gap:4px"><div style="font-size:10px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Kall · 24 t</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:26px">{{ api.calls24h }}</div></div>
+        <div style="padding:16px;border-left:1px solid #B8CEB7;display:flex;flex-direction:column;gap:4px"><div style="font-size:10px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Feil · 24 t</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:26px">{{ api.errors24h }}</div><div style="font-size:12px;color:#4A403A">{{ apiErrRate }}</div></div>
+        <div style="padding:16px;border-left:1px solid #B8CEB7;display:flex;flex-direction:column;gap:4px"><div style="font-size:10px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Kvote</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;padding-top:6px">{{ api.quota }}</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column">
+        <div style="padding-bottom:6px;border-bottom:1px solid #6B8C6A;font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4E6B4D">Siste feil</div>
+        <div style="padding:12px 0;font-size:14px;color:#A04040">{{ api.lastError }}</div>
+      </div>
+      <div style="font-size:13px;line-height:1.5;color:#4A403A;max-width:620px">API-nøkkelen ligger som hemmelig verdi (VMP_KEY) i Supabase og vises aldri her. Bytt den i Supabase-dashboardet.</div>
+    </div>
+    </sc-if>
+  </main>
+  <sc-if value="{{ drawerOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeDrawer }}" style="position:fixed;inset:0;background:rgba(42,37,32,0.3);z-index:49"></div>
+  <div style="{{ drawerStyle }}">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #B8CEB7">
+      <div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Bruker</div>
+      <button onClick="{{ closeDrawer }}" style="height:36px;border:0;background:transparent;font-size:14px;font-weight:500;cursor:pointer;color:#2A2520">Lukk</button>
+    </div>
+    <div style="padding:24px;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;line-height:1.05;letter-spacing:-0.03em">{{ du.name }}</div>
+        <div style="font-size:14px;color:#4A403A">{{ du.email }}</div>
+        <div><span style="{{ du.pill }}">{{ du.status }}</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid #B8CEB7;border-bottom:1px solid #B8CEB7">
+        <div style="padding:12px 0;display:flex;flex-direction:column;gap:2px"><div style="font-size:10px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Flasker</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:20px">{{ du.bottles }}</div></div>
+        <div style="padding:12px;border-left:1px solid #B8CEB7;display:flex;flex-direction:column;gap:2px"><div style="font-size:10px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Skann</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:20px">{{ du.scans }}</div></div>
+        <div style="padding:12px;border-left:1px solid #B8CEB7;display:flex;flex-direction:column;gap:2px"><div style="font-size:10px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Opprettet</div><div style="font-size:14px;font-weight:600;padding-top:4px">{{ du.created }}</div></div>
+      </div>
+      <sc-if value="{{ duHasCellars }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column">
+        <div style="padding-bottom:6px;border-bottom:1px solid #6B8C6A;font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4E6B4D">Skap</div>
+        <sc-for list="{{ duCellars }}" as="c" hint-placeholder-count="1">
+          <button onClick="{{ c.open }}" style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border:0;border-bottom:1px solid #F0EFE8;background:transparent;cursor:pointer;color:#2A2520;text-align:left">
+            <span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:600">{{ c.name }}</span><span style="font-size:13px;color:#4A403A">{{ c.role }} · {{ c.bottles }} fl.</span></span><span style="color:#4E6B4D">→</span>
+          </button>
+        </sc-for>
+      </div>
+      </sc-if>
+      <div style="display:flex;flex-direction:column">
+        <div style="padding-bottom:6px;border-bottom:1px solid #6B8C6A;font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4E6B4D">Siste aktivitet</div>
+        <sc-for list="{{ duActs }}" as="a" hint-placeholder-count="2">
+          <div style="display:flex;flex-direction:column;gap:2px;padding:10px 0;border-bottom:1px solid #F0EFE8"><span style="font-size:12px;color:#4A403A">{{ a.t }}</span><span style="font-size:14px">{{ a.what }}</span></div>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="padding-bottom:6px;border-bottom:1px solid #6B8C6A;font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4E6B4D">Handlinger</div>
+        <sc-if value="{{ isInvited }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button onClick="{{ resend }}" style="{{ btnS }}">Send invitasjon på nytt</button><button onClick="{{ revoke }}" style="{{ btnD }}">Trekk tilbake</button></div>
+        </sc-if>
+        <sc-if value="{{ canDeact }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button onClick="{{ resetPw }}" style="{{ btnS }}">Nullstill passord</button><button onClick="{{ deact }}" style="{{ btnD }}">Deaktiver</button></div>
+        </sc-if>
+        <sc-if value="{{ canReact }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button onClick="{{ react }}" style="{{ btnP }}">Aktiver igjen</button></div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+  <sc-if value="{{ inviteOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;background:rgba(42,37,32,0.4);z-index:55;display:flex;align-items:center;justify-content:center;padding:16px">
+    <div style="width:100%;max-width:420px;background:#FAFAF5;border-radius:4px;padding:24px;display:flex;flex-direction:column;gap:16px">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:22px;text-transform:uppercase">Inviter bruker</div>
+      <div style="font-size:14px;line-height:1.5;color:#4A403A">Brukeren får en e-post med lenke for å lage passord. Registrering er ellers stengt.</div>
+      <div style="display:flex;flex-direction:column;gap:6px"><div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">Navn</div>
+        <input value="{{ invName }}" onChange="{{ onInvName }}" style="height:44px;padding:0 14px;border:1px solid #B8CEB7;border-radius:4px;background:#FFFFFF;font-size:15px;outline:0;color:#2A2520"></div>
+      <div style="display:flex;flex-direction:column;gap:6px"><div style="font-size:11px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#4A403A">E-post</div>
+        <input value="{{ invEmail }}" onChange="{{ onInvEmail }}" type="email" style="height:44px;padding:0 14px;border:1px solid #B8CEB7;border-radius:4px;background:#FFFFFF;font-size:15px;outline:0;color:#2A2520"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end"><button onClick="{{ closeInvite }}" style="{{ btnS }}">Avbryt</button><button onClick="{{ sendInvite }}" style="{{ btnP }}">Send invitasjon</button></div>
+    </div>
+  </div>
+  </sc-if>
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);padding:14px 18px;border-radius:4px;background:#2A2520;color:#FAFAF5;font-size:14px;font-weight:500;z-index:60">{{ toast }}</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const A=()=>window.ADMIN_DATA||{users:[],cellars:[],eans:[],dupes:[],activity:[],api:{},scansPerDay:[]};
+const kr=n=>'kr '+String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+const ST={aktiv:['#4E6B4D','#E4ECE3'],invitert:['#A87C28','#F4EBD6'],deaktivert:['#A04040','#F3E2E0']};
+const pill=s=>({display:'inline-flex',alignItems:'center',height:24,padding:'0 10px',borderRadius:12,fontSize:12,fontWeight:600,color:(ST[s]||ST.aktiv)[0],background:(ST[s]||ST.aktiv)[1]});
+const btn=(kind)=>({height:40,padding:'0 14px',borderRadius:4,fontSize:13,fontWeight:600,cursor:'pointer',whiteSpace:'nowrap',
+  border:kind==='primary'?'0':kind==='danger'?'1px solid #A04040':'1px solid #2A2520',background:kind==='primary'?'#4E6B4D':'transparent',color:kind==='primary'?'#FAFAF5':kind==='danger'?'#A04040':'#2A2520'});
+class Component extends DCLogic{
+  state={tab:'overview',w:typeof window!=='undefined'?window.innerWidth:1200,users:A().users,eans:A().eans,dupes:A().dupes,activity:A().activity,
+    uq:'',uf:'Alle',sel:null,selCellar:null,invite:{open:false,name:'',email:''},eq:'',editEan:null,toast:null,apiTest:null};
+  componentDidMount(){this.onR=()=>this.setState({w:window.innerWidth});window.addEventListener('resize',this.onR);}
+  componentWillUnmount(){window.removeEventListener('resize',this.onR);clearTimeout(this.tt);}
+  flash(m){clearTimeout(this.tt);this.setState({toast:m});this.tt=setTimeout(()=>this.setState({toast:null}),2600);}
+  log(what){this.setState(s=>({activity:[{t:'Nå',who:'admin',what,kind:'admin'},...s.activity]}));}
+  updUser(id,p,msg){this.setState(s=>({users:s.users.map(u=>u.id===id?{...u,...p}:u)}));if(msg){this.flash(msg);this.log(msg);}}
+  sendInvite(){const {name,email}=this.state.invite;const e=email.trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(e)||!name.trim())return this.flash('Fyll inn navn og gyldig e-post');
+    if(this.state.users.some(u=>u.email===e))return this.flash('Brukeren finnes allerede');
+    try{const inv=JSON.parse(localStorage.getItem('vinskap.invites')||'[]');if(!inv.includes(e))inv.push(e);localStorage.setItem('vinskap.invites',JSON.stringify(inv));}catch(x){}
+    this.setState(s=>({users:[{id:'u'+Date.now(),name:name.trim(),email:e,status:'invitert',created:'I dag',last:'—',cellars:[],bottles:0,scans:0},...s.users],invite:{open:false,name:'',email:''}}));
+    this.flash('Invitasjon sendt til '+e);this.log('Inviterte '+e);}
+  testApi(){this.setState({apiTest:'Tester …'});const k=localStorage.getItem('vinskap.vmpKey');const t0=performance.now();
+    if(!k){setTimeout(()=>this.setState({apiTest:'Ingen API-nøkkel lagret på denne enheten – viser siste kjente status.'}),400);return;}
+    fetch('https://apis.vinmonopolet.no/products/v0/details-normal?maxResults=1',{headers:{'Ocp-Apim-Subscription-Key':k}})
+      .then(r=>this.setState({apiTest:(r.ok?'OK':'Feil '+r.status)+' · '+Math.round(performance.now()-t0)+' ms'}))
+      .catch(e=>this.setState({apiTest:'Kunne ikke nå API-et: '+e.message}));}
+  renderVals(){
+    const s=this.state,D=A();const narrow=s.w<860;
+    const uName=id=>id==='admin'?'Admin':((s.users.find(u=>u.id===id)||{}).name||'—');
+    const tabs=[['overview','Oversikt'],['users','Brukere',s.users.filter(u=>u.status==='invitert').length||''],['cellars','Skap'],['eans','Strekkoder',s.eans.filter(e=>e.flag).length||''],['dupes','Duplikater',s.dupes.length||''],['activity','Aktivitet'],['api','API-status']];
+    const rowCols=narrow?'minmax(0,1fr) auto':'minmax(0,2fr) minmax(0,1.5fr) minmax(0,1.5fr) auto';
+    const nav=tabs.map(([k,l,b])=>({label:l,badge:b?String(b):'',hasBadge:!!b,go:()=>this.setState({tab:k,sel:null,selCellar:null}),
+      style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,height:40,padding:'0 12px',border:0,borderRadius:4,cursor:'pointer',fontSize:14,fontWeight:s.tab===k?600:500,whiteSpace:'nowrap',flexShrink:0,
+        background:s.tab===k?'#E4ECE3':'transparent',color:s.tab===k?'#4E6B4D':'#2A2520',width:narrow?'auto':'100%'},
+      badgeStyle:b?{minWidth:20,height:20,padding:'0 6px',borderRadius:10,background:'#A87C28',color:'#FAFAF5',fontSize:11,fontWeight:700,display:'inline-flex',alignItems:'center',justifyContent:'center'}:{display:'none'}}));
+    const navStyle=narrow?{width:'100%',display:'flex',flexDirection:'column',gap:12,padding:'16px 16px 12px',borderBottom:'1px solid #B8CEB7',position:'sticky',top:0,background:'#FAFAF5',zIndex:10}
+      :{width:232,flexShrink:0,alignSelf:'flex-start',display:'flex',flexDirection:'column',gap:24,padding:'28px 16px',borderRight:'1px solid #B8CEB7',position:'sticky',top:0,height:'100vh',background:'#FAFAF5'};
+    const navListStyle=narrow?{display:'flex',gap:4,overflowX:'auto',margin:'0 -16px',padding:'0 16px'}:{display:'flex',flexDirection:'column',gap:2};
+    const act=s.users.filter(u=>u.status==='aktiv');
+    const max=Math.max(...D.scansPerDay,1);
+    const bars=D.scansPerDay.map((v,i)=>({v,style:{flex:1,height:Math.round(v/max*100)+'%',background:i===D.scansPerDay.length-1?'#A87C28':'#B8CEB7',borderRadius:'2px 2px 0 0',minHeight:4}}));
+    return {
+      nav,navStyle,navListStyle,narrow,
+      isOverview:s.tab==='overview',isUsers:s.tab==='users',isCellars:s.tab==='cellars',isEans:s.tab==='eans',isDupes:s.tab==='dupes',isActivity:s.tab==='activity',isApi:s.tab==='api',
+      stUsers:act.length,stInvited:s.users.filter(u=>u.status==='invitert').length,stCellars:D.cellars.length,
+      stBottles:D.cellars.reduce((a,c)=>a+c.bottles,0),stValue:kr(D.cellars.reduce((a,c)=>a+c.value,0)),stScans:D.scansPerDay.reduce((a,b)=>a+b,0),
+      bars,apiOk:D.api.status==='ok',api:D.api,
+      recent:s.activity.slice(0,5).map(a=>({...a,who:uName(a.who)})),
+      todo:[s.eans.filter(e=>e.flag).length?{label:s.eans.filter(e=>e.flag).length+' strekkoder med konflikt',go:()=>this.setState({tab:'eans'})}:null,
+            s.dupes.length?{label:s.dupes.length+' mulige duplikater',go:()=>this.setState({tab:'dupes'})}:null,
+            s.users.filter(u=>u.status==='invitert').length?{label:s.users.filter(u=>u.status==='invitert').length+' ubesvarte invitasjoner',go:()=>this.setState({tab:'users',uf:'Invitert'})}:null].filter(Boolean),
+      toast:s.toast,hasToast:!!s.toast,
+      _h:{kr,pill,btn,uName},
+      uq:s.uq,onUq:e=>this.setState({uq:e.target.value}),
+      uFilters:['Alle','Aktiv','Invitert','Deaktivert'].map(f=>({label:f,go:()=>this.setState({uf:f}),style:{height:34,padding:'0 14px',borderRadius:17,fontSize:13,fontWeight:500,cursor:'pointer',
+        border:'1px solid '+(s.uf===f?'#4E6B4D':'#B8CEB7'),background:s.uf===f?'#4E6B4D':'transparent',color:s.uf===f?'#FAFAF5':'#2A2520'}})),
+      userRows:s.users.filter(u=>(s.uf==='Alle'||u.status===s.uf.toLowerCase())&&(!s.uq||(u.name+' '+u.email).toLowerCase().includes(s.uq.toLowerCase())))
+        .map(u=>({...u,pill:pill(u.status),rowStyle:{display:'grid',gridTemplateColumns:rowCols,gap:'6px 16px',alignItems:'center',padding:'14px 0',borderBottom:'1px solid #F0EFE8',cursor:'pointer'},
+        metaStyle:{fontSize:13,color:'#4A403A',display:narrow?'none':'block'},open:()=>this.setState({sel:u.id}),cellarNames:u.cellars.map(c=>(D.cellars.find(x=>x.id===c)||{}).name).join(', ')||'—'})),
+      openInvite:()=>this.setState({invite:{open:true,name:'',email:''}}),closeInvite:()=>this.setState({invite:{open:false,name:'',email:''}}),
+      inviteOpen:s.invite.open,invName:s.invite.name,invEmail:s.invite.email,
+      onInvName:e=>{const v=e.target.value;this.setState(p=>({invite:{...p.invite,name:v}}));},onInvEmail:e=>{const v=e.target.value;this.setState(p=>({invite:{...p.invite,email:v}}));},
+      sendInvite:()=>this.sendInvite(),
+      eq:s.eq,onEq:e=>this.setState({eq:e.target.value}),
+      eanRows:s.eans.map((e,i)=>({...e,i,byName:uName(e.by),editing:s.editEan&&s.editEan.i===i,notEditing:!(s.editEan&&s.editEan.i===i),
+        rowStyle:{display:'grid',gridTemplateColumns:narrow?'minmax(0,1fr)':'minmax(0,1.3fr) minmax(0,2fr) minmax(0,1.3fr) auto',gap:'8px 16px',alignItems:'center',padding:'14px 12px',margin:'0 -12px',borderBottom:'1px solid #F0EFE8',background:e.flag?'#F4EBD6':'transparent',borderRadius:4},
+        actStyle:{display:'flex',gap:6,justifyContent:narrow?'flex-start':'flex-end',flexWrap:'nowrap'},
+        edit:()=>this.setState({editEan:{i,nr:e.nr}}),
+        remove:()=>{this.setState(p=>({eans:p.eans.filter((_,j)=>j!==i),editEan:null}));this.flash('Kobling fjernet');this.log('Fjernet strekkode '+e.ean+' → '+e.nr);},
+        keep:()=>{this.setState(p=>({eans:p.eans.filter((x,j)=>j===i||x.ean!==e.ean).map(x=>x.ean===e.ean?{...x,flag:false,note:null}:x)}));this.flash('Beholdt '+e.nr+' for '+e.ean);this.log('Løste konflikt '+e.ean+' → '+e.nr);}}))
+        .filter(e=>!s.eq||(e.ean+' '+e.nr+' '+e.name).toLowerCase().includes(s.eq.toLowerCase())),
+      editNr:s.editEan?s.editEan.nr:'',onEditNr:e=>{const v=e.target.value;this.setState(p=>({editEan:{...p.editEan,nr:v}}));},
+      saveEan:()=>{const {i,nr}=s.editEan;this.setState(p=>({eans:p.eans.map((x,j)=>j===i?{...x,nr:nr.trim(),flag:false,note:null}:x),editEan:null}));this.flash('Kobling oppdatert');this.log('Endret strekkode '+s.eans[i].ean+' → '+nr.trim());},
+      cancelEan:()=>this.setState({editEan:null}),
+      noDupes:s.dupes.length===0,
+      actFilters:['Alle','Inn','Ut','Strekkode','Admin'].map(f=>({label:f,go:()=>this.setState({af:f}),style:{height:34,padding:'0 14px',borderRadius:17,fontSize:13,fontWeight:500,cursor:'pointer',
+        border:'1px solid '+((s.af||'Alle')===f?'#4E6B4D':'#B8CEB7'),background:(s.af||'Alle')===f?'#4E6B4D':'transparent',color:(s.af||'Alle')===f?'#FAFAF5':'#2A2520'}})),
+      actRows:s.activity.filter(a=>{const f=s.af||'Alle';return f==='Alle'||({Inn:'inn',Ut:'ut',Strekkode:'ean',Admin:'admin'})[f]===a.kind;})
+        .map(a=>({...a,who:uName(a.who),tag:({inn:'Inn',ut:'Ut',ean:'Strekkode',admin:'Admin'})[a.kind],
+          tagStyle:{display:'inline-flex',height:22,alignItems:'center',padding:'0 8px',borderRadius:11,fontSize:11,fontWeight:600,
+            color:({inn:'#4E6B4D',ut:'#A04040',ean:'#A87C28',admin:'#2A2520'})[a.kind],background:({inn:'#E4ECE3',ut:'#F3E2E0',ean:'#F4EBD6',admin:'#F0EFE8'})[a.kind]}})),
+      testApi:()=>this.testApi(),apiTest:s.apiTest,hasApiTest:!!s.apiTest,
+      apiErrRate:D.api.calls24h?((D.api.errors24h/D.api.calls24h)*100).toFixed(2).replace('.',',')+' %':'—',
+      dupeRows:s.dupes.map(d=>({...d,aNr:d.a.nr||'Uten varenr.',bNr:d.b.nr||'Uten varenr.',
+        merge:()=>{this.setState(p=>({dupes:p.dupes.filter(x=>x.id!==d.id)}));const m='Slo sammen «'+d.b.name+'» inn i «'+d.a.name+'»';this.flash(m);this.log(m);},
+        ignore:()=>{this.setState(p=>({dupes:p.dupes.filter(x=>x.id!==d.id)}));this.flash('Markert som ikke duplikat');}})),
+      cellarRows:D.cellars.map(c=>({...c,ownerName:uName(c.owner),memberCount:c.members.length,valueL:kr(c.value),open:()=>this.setState({selCellar:c.id}),
+        style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:'8px 16px',alignItems:'center',padding:'14px 12px',margin:'0 -12px',borderBottom:'1px solid #F0EFE8',cursor:'pointer',borderRadius:4,background:s.selCellar===c.id?'#E4ECE3':'transparent'}})),
+      ...(()=>{const c=D.cellars.find(x=>x.id===s.selCellar);if(!c)return{hasCellar:false,sc:{},scItems:[],scMembers:[]};
+        return{hasCellar:true,sc:{...c,ownerName:uName(c.owner),valueL:kr(c.value)},scItems:c.items.map(i=>({...i,img:{width:32,height:48,flexShrink:0,background:'#FFFFFF url(https://bilder.vinmonopolet.no/cache/300x300-0/'+i.nr+'-1.jpg) center/contain no-repeat',borderRadius:2}})),
+          scMembers:c.members.map(m=>({name:uName(m),role:m===c.owner?'Eier':'Medlem',open:()=>this.setState({sel:m})})),closeCellar:()=>this.setState({selCellar:null})};})(),
+      ...(()=>{const u=s.users.find(x=>x.id===s.sel);if(!u)return{drawerOpen:false,du:{},duCellars:[],duActs:[]};
+        const isDeact=u.status==='deaktivert',isInv=u.status==='invitert';
+        return{drawerOpen:true,du:{...u,pill:pill(u.status)},closeDrawer:()=>this.setState({sel:null}),
+          drawerStyle:{position:'fixed',top:0,right:0,bottom:0,width:narrow?'100%':440,background:'#FAFAF5',borderLeft:'1px solid #B8CEB7',zIndex:50,display:'flex',flexDirection:'column',overflowY:'auto'},
+          duCellars:u.cellars.map(c=>{const x=D.cellars.find(y=>y.id===c)||{};return{...x,role:x.owner===u.id?'Eier':'Medlem',open:()=>this.setState({tab:'cellars',sel:null,selCellar:c})};}),
+          duHasCellars:u.cellars.length>0,
+          duActs:s.activity.filter(a=>a.who===u.id||a.what.includes(u.email)).slice(0,5),
+          canDeact:!isDeact&&!isInv,canReact:isDeact,isInvited:isInv,
+          deact:()=>this.updUser(u.id,{status:'deaktivert'},'Deaktiverte '+u.email),
+          react:()=>this.updUser(u.id,{status:'aktiv'},'Aktiverte '+u.email),
+          resetPw:()=>{this.flash('Lenke for nytt passord sendt til '+u.email);this.log('Nullstilte passord for '+u.email);},
+          resend:()=>{this.flash('Invitasjon sendt på nytt til '+u.email);this.log('Sendte invitasjon på nytt til '+u.email);},
+          revoke:()=>{this.setState(p=>({users:p.users.filter(x=>x.id!==u.id),sel:null}));this.flash('Invitasjon trukket tilbake');this.log('Trakk tilbake invitasjon til '+u.email);}};})(),btnP:btn('primary'),btnS:btn('secondary'),btnD:btn('danger'),
+    };
+  }
+}
+</script>
+</body>
+</html>

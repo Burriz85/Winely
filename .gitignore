@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.expo/
+web-build/
+*.tsbuildinfo
+.env
+.env.local
+apps/mobile/ios/
+apps/mobile/android/
+supabase/.branches
+supabase/.temp
+.DS_Store
+supabase/functions/.ca.crt

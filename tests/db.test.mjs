@@ -1,0 +1,318 @@
+// Integrasjonstester mot lokal Supabase (handoff-oppgave 8: test RLS).
+// Forutsetter: `npx supabase start`, `node tests/mock-vmp.mjs` og
+// `npx supabase functions serve --env-file supabase/functions/.env` (se README).
+// Kjør: npm run test:db
+import { createClient } from '@supabase/supabase-js';
+import assert from 'node:assert/strict';
+import { before, describe, it } from 'node:test';
+
+const URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
+const ANON = process.env.SUPABASE_ANON_KEY ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
+const MAILPIT = process.env.MAILPIT_URL ?? 'http://127.0.0.1:54324';
+
+const run = Date.now().toString(36);
+const mail = (n) => `${n}.${run}@test.no`;
+const PW = 'hemmelig-passord-1';
+const opts = { auth: { persistSession: false, autoRefreshToken: false } };
+const service = createClient(URL, SERVICE, opts);
+const anonClient = () => createClient(URL, ANON, opts);
+
+async function signedIn(email, password = PW) {
+  const c = anonClient();
+  const { error } = await c.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return c;
+}
+
+async function tokenFor(email, subjectPart) {
+  for (let i = 0; i < 40; i++) {
+    const r = await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent('to:' + email)}`).then((r) => r.json());
+    const msg = (r.messages ?? []).find((m) => !subjectPart || m.Subject.includes(subjectPart));
+    if (msg) {
+      const full = await fetch(`${MAILPIT}/api/v1/message/${msg.ID}`).then((r) => r.json());
+      const m = (full.Text || full.HTML).match(/\b(\d{6})\b/);
+      if (m) return m[1];
+    }
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  throw new Error('fant ingen kode for ' + email);
+}
+
+async function activate(email, name) {
+  const c = anonClient();
+  const token = await tokenFor(email, 'invitert');
+  const { error } = await c.auth.verifyOtp({ email, token, type: 'invite' });
+  assert.ifError(error);
+  const upd = await c.auth.updateUser({ password: PW, data: { name } });
+  assert.ifError(upd.error);
+  return c;
+}
+
+const invoke = async (c, fn, body) => {
+  const { data, error } = await c.functions.invoke(fn, { body });
+  if (!error) return { data, error: null, status: 200 };
+  const text = await error.context?.text?.().catch(() => '');
+  return { data, error: `${error.context?.status} ${text}`, status: error.context?.status };
+};
+
+let admin, ola, kari, per;
+let olaCellar, productA, productB;
+const EAN = '70' + String(Date.now()).slice(-11);
+
+before(async () => {
+  const { data, error } = await service.auth.admin.createUser({ email: mail('admin'), password: PW, email_confirm: true, user_metadata: { name: 'Admin' } });
+  assert.ifError(error);
+  await service.from('profiles').update({ is_admin: true }).eq('id', data.user.id);
+  admin = await signedIn(mail('admin'));
+});
+
+describe('pålogging og invitasjon', () => {
+  it('åpen registrering er stengt', async () => {
+    const { error } = await anonClient().auth.signUp({ email: mail('fremmed'), password: PW });
+    assert.ok(error, 'signUp skulle feilet');
+  });
+
+  it('admin inviterer, brukeren aktiverer med kode og kan logge inn', async () => {
+    for (const [n, name] of [['ola', 'Ola Nordmann'], ['kari', 'Kari Nordmann'], ['per', 'Per Hansen']]) {
+      const r = await invoke(admin, 'admin-invite', { email: mail(n), name });
+      assert.equal(r.error, null, 'invite ' + n + ': ' + r.error);
+    }
+    const { data: before } = await admin.rpc('admin_users');
+    assert.equal(before.find((u) => u.email === mail('ola')).status, 'invitert');
+
+    ola = await activate(mail('ola'), 'Ola Nordmann');
+    kari = await activate(mail('kari'), 'Kari Nordmann');
+    per = await activate(mail('per'), 'Per Hansen');
+    await signedIn(mail('ola'));
+
+    const { data: after } = await admin.rpc('admin_users');
+    const o = after.find((u) => u.email === mail('ola'));
+    assert.equal(o.status, 'aktiv');
+    assert.equal(o.name, 'Ola Nordmann');
+    assert.equal(o.cellar_ids.length, 1, 'handle_new_user lager eget skap');
+  });
+
+  it('vanlig bruker kan ikke gjøre seg selv til admin eller aktivere seg selv', async () => {
+    const { data: { user } } = await ola.auth.getUser();
+    const { error } = await ola.from('profiles').update({ is_admin: true }).eq('id', user.id);
+    assert.ok(error, 'is_admin skulle vært blokkert');
+    const { error: e2 } = await ola.from('profiles').update({ status: 'aktiv' }).eq('id', user.id);
+    assert.ok(e2, 'status skulle vært blokkert');
+    const { error: e3 } = await ola.from('profiles').update({ name: 'Ola N.' }).eq('id', user.id);
+    assert.ifError(e3);
+    const { data } = await ola.rpc('is_admin');
+    assert.equal(data, false);
+  });
+
+  it('bare admin kan kalle admin-invite og admin_users', async () => {
+    const r = await invoke(ola, 'admin-invite', { email: mail('x'), name: 'X' });
+    assert.equal(r.status, 403);
+    const { data } = await ola.rpc('admin_users');
+    assert.deepEqual(data, []);
+  });
+
+  it('send på nytt og trekk tilbake en ubesvart invitasjon', async () => {
+    const email = mail('ingrid');
+    assert.equal((await invoke(admin, 'admin-invite', { email, name: 'Ingrid Berg' })).error, null);
+    const { data: users } = await admin.rpc('admin_users');
+    const ingrid = users.find((u) => u.email === email);
+    const resend = await invoke(admin, 'admin-invite', { id: ingrid.id, email, action: 'resend' });
+    assert.equal(resend.error, null);
+    const revoke = await invoke(admin, 'admin-invite', { id: ingrid.id, email, action: 'revoke' });
+    assert.equal(revoke.error, null);
+    const { data: after } = await admin.rpc('admin_users');
+    assert.equal(after.find((u) => u.email === email), undefined);
+  });
+
+  it('nullstill passord sender en kode som virker', async () => {
+    assert.equal((await invoke(admin, 'admin-invite', { email: mail('per'), action: 'reset' })).error, null);
+    const token = await tokenFor(mail('per'), 'passord');
+    const c = anonClient();
+    assert.ifError((await c.auth.verifyOtp({ email: mail('per'), token, type: 'recovery' })).error);
+    assert.ifError((await c.auth.updateUser({ password: PW + '2' })).error);
+    per = await signedIn(mail('per'), PW + '2');
+  });
+});
+
+describe('skap, produkter og inn/ut', () => {
+  it('eier ser eget skap og registrerer atomisk og idempotent', async () => {
+    const { data: cellars } = await ola.from('cellars').select('id,name');
+    assert.equal(cellars.length, 1);
+    olaCellar = cellars[0].id;
+    assert.equal(cellars[0].name, 'Vinskapet');
+
+    const { data: pid, error } = await ola.rpc('ensure_product', { p_vmp_nr: '1670901', p_name: 'Brezza Barolo Cannubi 2017', p_type: 'Rødvin', p_vintage: 2017, p_price: 689 });
+    assert.ifError(error);
+    productA = pid;
+    const cid = 'c-' + run;
+    const r1 = await ola.rpc('register_movement', { p_cellar: olaCellar, p_product: pid, p_dir: 'in', p_qty: 3, p_client_id: cid });
+    assert.equal(r1.data, 3);
+    const again = await ola.rpc('register_movement', { p_cellar: olaCellar, p_product: pid, p_dir: 'in', p_qty: 3, p_client_id: cid });
+    assert.equal(again.data, 3, 'samme client_id telles ikke to ganger');
+    const tooMany = await ola.rpc('register_movement', { p_cellar: olaCellar, p_product: pid, p_dir: 'out', p_qty: 5, p_client_id: cid + 'x' });
+    assert.equal(tooMany.error?.code, '23514', 'kan ikke ta ut flere enn man har');
+    const out = await ola.rpc('register_movement', { p_cellar: olaCellar, p_product: pid, p_dir: 'out', p_qty: 1, p_client_id: cid + 'y' });
+    assert.equal(out.data, 2);
+  });
+
+  it('første registrering vinner: ensure_product overskriver ikke type/årgang/pris', async () => {
+    const { data: pid } = await kari.rpc('ensure_product', { p_vmp_nr: '1670901', p_name: 'Tull', p_type: 'Hvitvin', p_vintage: 1999, p_price: 1 });
+    assert.equal(pid, productA);
+    const { data: p } = await ola.from('products').select('name,type,vintage,price').eq('id', pid).single();
+    assert.deepEqual(p, { name: 'Brezza Barolo Cannubi 2017', type: 'Rødvin', vintage: 2017, price: 689 });
+  });
+
+  it('andre ser ikke skapet før det er delt', async () => {
+    const { data } = await per.from('cellar_items').select('id').eq('cellar_id', olaCellar);
+    assert.deepEqual(data, []);
+    const ins = await per.rpc('register_movement', { p_cellar: olaCellar, p_product: productA, p_dir: 'in', p_qty: 1, p_client_id: 'p-' + run });
+    assert.ok(ins.error, 'per skal ikke kunne skrive i olas skap');
+    const { data: people } = await per.rpc('cellar_people', { p_cellar: olaCellar });
+    assert.deepEqual(people, []);
+  });
+
+  it('deling: eier inviterer på e-post, medlem kan registrere', async () => {
+    const { data: res, error } = await ola.rpc('invite_to_cellar', { p_cellar: olaCellar, p_email: mail('kari') });
+    assert.ifError(error);
+    assert.equal(res, 'added');
+    const pending = await ola.rpc('invite_to_cellar', { p_cellar: olaCellar, p_email: mail('ukjent') });
+    assert.equal(pending.data, 'invited');
+    const { data: people } = await ola.rpc('cellar_people', { p_cellar: olaCellar });
+    assert.deepEqual(people.map((p) => [p.email, p.role, p.pending]).sort(), [
+      [mail('kari'), 'member', false], [mail('ola'), 'owner', false], [mail('ukjent'), 'member', true],
+    ].sort());
+    const k = await kari.rpc('register_movement', { p_cellar: olaCellar, p_product: productA, p_dir: 'in', p_qty: 2, p_client_id: 'k-' + run });
+    assert.equal(k.data, 4);
+    const notOwner = await kari.rpc('invite_to_cellar', { p_cellar: olaCellar, p_email: mail('per') });
+    assert.ok(notOwner.error, 'medlem kan ikke invitere');
+    await ola.rpc('remove_from_cellar', { p_cellar: olaCellar, p_email: mail('ukjent') });
+  });
+});
+
+describe('strekkoder', () => {
+  it('ukjent → forslag blir kobling → treff teller', async () => {
+    const miss = await ola.rpc('lookup_ean', { p_ean: EAN });
+    assert.deepEqual(miss.data, []);
+    const s = await ola.rpc('suggest_ean', { p_ean: EAN, p_product: productA });
+    assert.equal(s.data, 'mapped');
+    const hit = await kari.rpc('lookup_ean', { p_ean: EAN });
+    assert.equal(hit.data[0].vmp_nr, '1670901');
+  });
+
+  it('forslag om annet produkt blir konflikt som admin ser og løser', async () => {
+    const { data: pid } = await kari.rpc('ensure_product', { p_vmp_nr: '1616601', p_name: 'Paolo Scavino Barolo Cannubi 2019', p_type: 'Rødvin', p_vintage: 2019, p_price: 989 });
+    productB = pid;
+    const s = await kari.rpc('suggest_ean', { p_ean: EAN, p_product: productB });
+    assert.equal(s.data, 'conflict');
+    const { data: rows } = await admin.from('admin_eans').select('*').eq('ean', EAN);
+    assert.equal(rows.length, 2);
+    assert.ok(rows.every((r) => r.conflict));
+    assert.equal(rows.find((r) => r.mapped).vmp_nr, '1670901');
+    assert.equal(rows.find((r) => r.mapped).hits, 1);
+    // Vanlig bruker ser ikke admin-visningen
+    const { data: none } = await ola.from('admin_eans').select('*').eq('ean', EAN);
+    assert.deepEqual(none, []);
+    // «Behold denne» for produkt B
+    await admin.from('ean_map').update({ product_id: productB }).eq('ean', EAN);
+    await admin.from('ean_suggestions').delete().eq('ean', EAN).neq('product_id', productB);
+    const { data: solved } = await admin.from('admin_eans').select('*').eq('ean', EAN);
+    assert.equal(solved.length, 1);
+    assert.equal(solved[0].conflict, false);
+  });
+});
+
+describe('vinmonopolet-proxy', () => {
+  it('krever innlogget bruker', async () => {
+    const r = await fetch(`${URL}/functions/v1/vmp/products/v0/details-normal?maxResults=1`, { headers: { apikey: ANON, Authorization: 'Bearer ' + ANON } });
+    assert.equal(r.status, 401);
+  });
+
+  it('søker via proxyen og logger api_health', async () => {
+    const { data: { session } } = await ola.auth.getSession();
+    const r = await fetch(`${URL}/functions/v1/vmp/products/v0/details-normal?productShortNameContains=barolo_cannubi&maxResults=20`, {
+      headers: { apikey: ANON, Authorization: 'Bearer ' + session.access_token },
+    });
+    assert.equal(r.status, 200);
+    const rows = await r.json();
+    assert.equal(rows.length, 2);
+    const blocked = await fetch(`${URL}/functions/v1/vmp/prices/v0/x`, { headers: { apikey: ANON, Authorization: 'Bearer ' + session.access_token } });
+    assert.equal(blocked.status, 403);
+    const { data: health } = await admin.from('api_health').select('*').order('at', { ascending: false }).limit(1);
+    assert.equal(health[0].status, 200);
+    assert.equal(health[0].source, 'proxy');
+  });
+
+  it('vmp-sync: «Oppdater fra API» for ett produkt, og nattlig synk med service-nøkkel', async () => {
+    await service.from('products').update({ name: 'Gammelt navn' }).eq('id', productA);
+    const one = await invoke(ola, 'vmp-sync', { vmp_nr: '1670901' });
+    assert.equal(one.error, null);
+    const { data: p } = await ola.from('products').select('name,vmp_updated_at').eq('id', productA).single();
+    assert.equal(p.name, 'Brezza Barolo Cannubi 2017');
+    assert.ok(p.vmp_updated_at);
+    const denied = await invoke(ola, 'vmp-sync', {});
+    assert.equal(denied.status, 403);
+    const cron = await invoke(service, 'vmp-sync', {});
+    assert.equal(cron.error, null);
+    assert.ok(cron.data.seen >= 9);
+  });
+});
+
+describe('admin', () => {
+  it('admin leser alt: skap, beholdning, historikk, statistikk', async () => {
+    const { data: cellars } = await admin.from('admin_cellars').select('*').eq('id', olaCellar).single();
+    assert.equal(cellars.bottles, 4);
+    assert.equal(cellars.members, 2);
+    assert.equal(Number(cellars.value), 4 * 689);
+    const { data: mv } = await admin.from('movements').select('id').eq('cellar_id', olaCellar);
+    assert.equal(mv.length, 3);
+    const { data: days } = await admin.rpc('admin_scans_per_day', { p_days: 14 });
+    assert.equal(days.length, 14);
+    assert.ok(days.at(-1).n >= 2);
+    const { data: act } = await admin.from('admin_activity').select('*').order('created_at', { ascending: false }).limit(50);
+    assert.ok(act.some((a) => a.kind === 'inn'));
+    assert.ok(act.some((a) => a.kind === 'ean'));
+    assert.ok(act.some((a) => a.kind === 'admin'));
+    const denied = await ola.rpc('admin_scans_per_day', { p_days: 14 });
+    assert.ok(denied.error);
+  });
+
+  it('duplikater: vises, «Ikke duplikat» huskes, «Slå sammen» flytter beholdning', async () => {
+    const { data: manual } = await admin.from('products').insert({ name: 'Brezza Barolo Cannubi 2017 (manuell)', type: 'Rødvin' }).select('id').single();
+    await service.from('cellar_items').insert({ cellar_id: olaCellar, product_id: manual.id, qty: 1 });
+    const { data: d } = await admin.from('admin_duplicates').select('*').eq('merge_id', manual.id);
+    assert.equal(d.length, 1);
+    assert.equal(d[0].keep_id, productA);
+    assert.equal(d[0].merge_bottles, 1);
+
+    await admin.from('dupe_ignores').insert({ keep_id: productA, merge_id: manual.id });
+    const { data: ignored } = await admin.from('admin_duplicates').select('*').eq('merge_id', manual.id);
+    assert.equal(ignored.length, 0);
+    await admin.from('dupe_ignores').delete().eq('merge_id', manual.id);
+
+    assert.ifError((await admin.rpc('admin_merge_products', { p_keep: productA, p_merge: manual.id })).error);
+    const { data: item } = await ola.from('cellar_items').select('qty').eq('cellar_id', olaCellar).eq('product_id', productA).single();
+    assert.equal(item.qty, 5);
+    const denied = await ola.rpc('admin_merge_products', { p_keep: productA, p_merge: productB });
+    assert.ok(denied.error);
+  });
+
+  it('deaktivert bruker kan ikke skrive og ikke logge inn; aktiver igjen virker', async () => {
+    const { data: users } = await admin.rpc('admin_users');
+    const k = users.find((u) => u.email === mail('kari'));
+    assert.equal((await invoke(admin, 'admin-invite', { id: k.id, email: mail('kari'), action: 'deactivate' })).error, null);
+    const w = await kari.rpc('register_movement', { p_cellar: olaCellar, p_product: productA, p_dir: 'in', p_qty: 1, p_client_id: 'kd-' + run });
+    assert.ok(w.error, 'deaktivert bruker skal ikke kunne skrive');
+    const s = await kari.rpc('suggest_ean', { p_ean: '7000000000017', p_product: productA });
+    assert.ok(s.error);
+    const { error } = await anonClient().auth.signInWithPassword({ email: mail('kari'), password: PW });
+    assert.ok(error, 'utestengt bruker skal ikke kunne logge inn');
+    const { data: after } = await admin.rpc('admin_users');
+    assert.equal(after.find((u) => u.email === mail('kari')).status, 'deaktivert');
+
+    assert.equal((await invoke(admin, 'admin-invite', { id: k.id, email: mail('kari'), action: 'reactivate' })).error, null);
+    kari = await signedIn(mail('kari'));
+    const ok = await kari.rpc('register_movement', { p_cellar: olaCellar, p_product: productA, p_dir: 'in', p_qty: 1, p_client_id: 'kr-' + run });
+    assert.ifError(ok.error);
+  });
+});
