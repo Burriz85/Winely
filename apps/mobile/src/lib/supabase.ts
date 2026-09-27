@@ -30,7 +30,10 @@ const chunkedSecureStore = {
   },
 };
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+export const CONFIG_OK = !!SUPABASE_URL && !!SUPABASE_ANON_KEY;
+
+// createClient kaster hvis nøkkelen mangler, og da blir siden blank. _layout.tsx viser en melding i stedet.
+export const supabase = createClient(SUPABASE_URL || 'http://localhost', SUPABASE_ANON_KEY || 'mangler', {
   auth: {
     // På web bruker supabase-js localStorage som standard.
     storage: Platform.OS === 'web' ? undefined : chunkedSecureStore,

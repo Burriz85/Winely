@@ -17,7 +17,7 @@ import { TabBar } from '../components/TabBar';
 import { Toast } from '../components/Toast';
 import { AuthProvider, useAuth } from '../lib/auth';
 import { CellarProvider, useQueueRunner } from '../lib/data';
-import { SUPABASE_URL } from '../lib/supabase';
+import { CONFIG_OK } from '../lib/supabase';
 import { figtree } from '../lib/theme';
 import { UIProvider, useUI } from '../lib/ui';
 
@@ -55,10 +55,10 @@ export default function RootLayout() {
       {/* På web vises appen i en telefonbred kolonne. */}
       <View style={{ flex: 1, backgroundColor: Platform.OS === 'web' ? C.ivoryDark : C.ivory, alignItems: 'center' }}>
         <View style={{ flex: 1, width: '100%', maxWidth: Platform.OS === 'web' ? 480 : undefined, backgroundColor: C.ivory, overflow: 'hidden' }}>
-          {!SUPABASE_URL ? (
+          {!CONFIG_OK ? (
             <View style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
               <Text style={{ ...figtree(500), fontSize: 15, color: C.red }}>
-                Mangler EXPO_PUBLIC_SUPABASE_URL og EXPO_PUBLIC_SUPABASE_ANON_KEY. Se apps/mobile/.env.example.
+                Mangler EXPO_PUBLIC_SUPABASE_URL eller EXPO_PUBLIC_SUPABASE_ANON_KEY da appen ble bygget. Legg dem inn i Netlify (Environment variables) og bygg på nytt (Trigger deploy).
               </Text>
             </View>
           ) : (

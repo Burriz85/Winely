@@ -5,7 +5,10 @@ export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? '';
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
 export const VMP_QUOTA = import.meta.env.VITE_VMP_QUOTA || '—';
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+export const CONFIG_OK = !!SUPABASE_URL && !!SUPABASE_ANON_KEY;
+
+// createClient kaster hvis nøkkelen mangler, og da blir siden blank. main.tsx viser en melding i stedet.
+export const supabase = createClient(SUPABASE_URL || 'http://localhost', SUPABASE_ANON_KEY || 'mangler');
 
 export const vmp = createVmpClient({
   baseUrl: SUPABASE_URL + '/functions/v1/vmp',
