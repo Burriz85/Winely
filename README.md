@@ -85,7 +85,7 @@ Handoffen sier at farger, typografi, avstander og tekster skal være slik de st�
 - `scan_events` og `ean_map.hits`: Skann per dag, skann per bruker og treff per strekkode hadde ingen kilde.
 - `ensure_product()`: Brukere kunne legge inn produkter, men ikke oppdatere dem, og ingen regel sa hvem som eier type, årgang og pris. Nå vinner den første registreringen, og navn og bilde kommer bare fra Vinmonopolet.
 - `suggest_ean()` og visningen `admin_eans`: Konfliktflyten i handoffen, med logging til `audit_log`.
-- `cellar_people()`, `invite_to_cellar()` og `remove_from_cellar()`: Eieren må se og invitere medlemmer på e-post. Finnes personen, blir hen medlem med én gang. Ellers venter invitasjonen til kontoen opprettes. **Det sendes ingen e-post fra «Del skapet»**, og en person uten konto må fortsatt inviteres av admin. Toasten sier det.
+- `cellar_people()`, `invite_to_cellar()` og `remove_from_cellar()`: Eieren må se og invitere medlemmer på e-post. Finnes personen, blir hen medlem med én gang. Ellers venter invitasjonen til admin har invitert personen og kontoen er aktivert. «Del skapet» sender ikke e-post (bestemt 27.09.2026), så toasten sier «Invitasjon lagret» i stedet for prototypens «Invitasjon sendt».
 - `dupe_ignores`: «Ikke duplikat» må huskes, ellers dukker kortet opp igjen.
 - `api_health.source` skiller proxykall, nattlig synk og admin-test.
 - `admin_merge_products()` flytter nå også strekkodeforslag. Før ble de slettet via cascade.
@@ -113,4 +113,3 @@ Handoffen sier at farger, typografi, avstander og tekster skal være slik de st�
 - **Strekkodeskanning er ikke testet med en ekte strekkode.** Kameraflyten er testet med et falskt kamera, og oppslag og kobling er testet i databasen. På web bruker `expo-camera` nettleserens `BarcodeDetector` der den finnes (Chrome på Android). Ellers laster den en WASM-polyfill fra CDN, blant annet i Safari på iOS.
 - **Duplikater** oppstår bare for produkter uten varenummer. Appen har ingen måte å lage slike på (alt går via Vinmonopolet-søk), så siden blir tom i praksis til noen legger inn produkter manuelt.
 - Produktbilder hentes fra bilder.vinmonopolet.no under deres vilkår. Mangler bildet (404), vises fargestripen for vintypen.
-- Deling til en e-post uten konto sender ingen e-post (se over).
