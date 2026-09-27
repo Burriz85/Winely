@@ -1,0 +1,36 @@
+<product>
+<ageLimit>18</ageLimit>
+<allergens>Sulfitt</allergens>
+<buyable>false</buyable>
+<code>9422102</code>
+<color>Lys grønngul.</color>
+<content>
+<characteristics><name>Fylde</name><readableValue>Fylde, 7 av 12</readableValue><value>7</value></characteristics>
+<characteristics><name>Friskhet</name><readableValue>Friskhet, 8 av 12</readableValue><value>8</value></characteristics>
+<characteristics><name>Sødme</name><readableValue>Sødme, 3 av 12</readableValue><value>3</value></characteristics>
+<ingredients><code>298</code><formattedValue>Riesling 98%</formattedValue><readableValue>Riesling 98 prosent</readableValue></ingredients>
+<ingredients><code>321</code><formattedValue>Sauvignon Blanc 2%</formattedValue><readableValue>Sauvignon Blanc 2 prosent</readableValue></ingredients>
+<isGoodFor><code>B</code><name>Skalldyr</name></isGoodFor>
+<isGoodFor><code>C</code><name>Fisk</name></isGoodFor>
+<isGoodFor><code>L</code><name>Ost</name></isGoodFor>
+<storagePotential><code>Y</code><formattedValue>Drikkeklar nå, men kan også lagres</formattedValue></storagePotential>
+<style><code>stil003</code><description>God friskhet, middels fylde og alkohol.</description><name>Lett og frisk</name></style>
+<traits><formattedValue>12%</formattedValue><name>Alkohol</name><readableValue>12 prosent</readableValue></traits>
+<traits><formattedValue>12,6 g/l</formattedValue><name>Sukker</name><readableValue>12,6 gram per liter</readableValue></traits>
+<traits><formattedValue>8,6 g/l</formattedValue><name>Syre</name><readableValue>8,6 gram per liter</readableValue></traits>
+</content>
+<description/>
+<district><code>usa_washington</code><name>Washington</name></district>
+<expired>true</expired>
+<main_category><code>hvitvin</code><name>Hvitvin</name></main_category>
+<main_country><code>usa</code><name>USA</name></main_country>
+<main_producer><code>charles_smith</code><name>Charles Smith</name></main_producer>
+<name>Charles Smith Kung Fu Girl Riesling 2020</name>
+<price><formattedValue>Kr 49,50</formattedValue><readableValue>49 kroner og 50 øre</readableValue><value>49.5</value></price>
+<smell>Aroma preget av eple, sitrus og litt blomst, hint av petroleum</smell>
+<status>utgatt</status>
+<sub_District><code>usa_washington_columbia_valley</code><name>Columbia Valley</name></sub_District>
+<taste>Ørlite utviklet, preg av sitrus, eple og litt krydder, hint av mineraler i ettersmak.</taste>
+<volume><formattedValue>37,5 cl</formattedValue><readableValue>37,5 centiliter</readableValue><value>37.5</value></volume>
+<year>2020</year>
+</product>

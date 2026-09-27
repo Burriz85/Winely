@@ -22,6 +22,9 @@ const KEY = 'vinskap.queue';
 let ops: Op[] = [];
 let loaded = false;
 let flushing: Promise<void> | null = null;
+let detailsListener: ((cellarId: string) => void) | null = null;
+/** Kalles når full produktdata er hentet for en vin som nettopp ble satt inn. */
+export const onDetails = (l: (cellarId: string) => void) => { detailsListener = l; };
 const listeners = new Set<() => void>();
 
 const emit = () => listeners.forEach((l) => l());
@@ -105,6 +108,12 @@ async function run(op: Op) {
       .update({ drink_from: w.from, drink_to: w.to })
       .eq('cellar_id', op.cellar_id).eq('product_id', pid);
     if (e2) fail(e2);
+  }
+  if (op.isNew) {
+    // Hent type, pris, druer osv. fra vinmonopolet.no i bakgrunnen. Feiler det, beholdes det brukeren skrev.
+    supabase.functions.invoke('vmp-sync', { body: { vmp_nr: w.nr } })
+      .then(() => detailsListener?.(op.cellar_id))
+      .catch(() => {});
   }
 }
 

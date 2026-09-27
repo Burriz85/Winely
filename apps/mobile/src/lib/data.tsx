@@ -5,13 +5,14 @@ import { defaultWindow, isWineType, vmpImage, type Wine } from '@vinskap/shared'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import { useAuth } from './auth';
-import { flush, queue, type Op } from './queue';
+import { flush, onDetails, queue, type Op } from './queue';
 import { supabase } from './supabase';
 import { vmp } from './vmp';
 
 type ProductRow = {
   id: string; vmp_nr: string | null; name: string; producer: string | null; vintage: number | null; type: string | null;
   country: string | null; region: string | null; grapes: string[] | null; abv: number | null; price: number | null; image_url: string | null;
+  taste?: string | null; food?: string | null;
 };
 
 export function productToWine(p: ProductRow, item?: { qty: number; drink_from: number | null; drink_to: number | null }): Wine {
@@ -21,7 +22,7 @@ export function productToWine(p: ProductRow, item?: { qty: number; drink_from: n
     productId: p.id, nr: p.vmp_nr ?? '', name: p.name, producer: p.producer ?? '', year,
     type: isWineType(p.type) ? p.type : null, country: p.country ?? '', region: p.region ?? '',
     grape: (p.grapes ?? []).join(', '), abv: p.abv != null ? String(p.abv).replace('.', ',') + ' %' : '',
-    price: Number(p.price ?? 0), taste: '', food: '', qty: item?.qty ?? 0,
+    price: Number(p.price ?? 0), taste: p.taste ?? '', food: p.food ?? '', qty: item?.qty ?? 0,
     from: item?.drink_from ?? w.from, to: item?.drink_to ?? w.to, img: p.image_url || vmpImage(p.vmp_nr),
   };
 }
@@ -99,6 +100,8 @@ export function useQueueRunner(onError: (msg: string) => void, enabled: boolean)
           qc.invalidateQueries({ queryKey: ['wines', e.op.cellar_id] });
         },
       );
+    // Produktdata fra vinmonopolet.no kommer noen sekunder etter at vinen er satt inn.
+    onDetails((cellarId) => qc.invalidateQueries({ queryKey: ['wines', cellarId] }));
     queue.load().then(go);
     // Prøv ved hver nettverksendring; flush() stopper av seg selv hvis vi fortsatt er offline.
     // På web sjekker NetInfo tilgjengelighet mot en ekstern URL, så lytt også på «online».

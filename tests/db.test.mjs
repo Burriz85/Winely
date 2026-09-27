@@ -237,6 +237,35 @@ describe('vinmonopolet-proxy', () => {
   });
 });
 
+describe('produktdata fra vinmonopolet.no', () => {
+  it('preview gir data uten å lagre, og vanlig kall fyller inn produktet', async () => {
+    const { data: pid } = await ola.rpc('ensure_product', { p_vmp_nr: '9422102', p_name: 'Charles Smith Kung Fu Girl Riesling 2020', p_type: 'Rødvin' });
+    const prev = await invoke(ola, 'vmp-sync', { vmp_nr: '9422102', preview: true });
+    assert.equal(prev.error, null);
+    assert.equal(prev.data.details.type, 'Hvitvin');
+    const { data: before } = await ola.from('products').select('type,taste').eq('id', pid).single();
+    assert.deepEqual(before, { type: 'Rødvin', taste: null }, 'preview skal ikke lagre');
+
+    const r = await invoke(ola, 'vmp-sync', { vmp_nr: '9422102' });
+    assert.equal(r.error, null);
+    assert.equal(r.data.details, true);
+    const { data: p } = await ola.from('products').select('type,vintage,price,country,region,grapes,abv,taste,food,volume_cl').eq('id', pid).single();
+    assert.deepEqual(p, {
+      type: 'Hvitvin', vintage: 2020, price: 49.5, country: 'USA', region: 'Washington, Columbia Valley',
+      grapes: ['Riesling 98%', 'Sauvignon Blanc 2%'], abv: 12,
+      taste: 'Ørlite utviklet, preg av sitrus, eple og litt krydder, hint av mineraler i ettersmak.', food: 'Skalldyr · Fisk · Ost', volume_cl: 37.5,
+    });
+    const { data: h } = await admin.from('api_health').select('status,source').eq('source', 'web').order('at', { ascending: false }).limit(1);
+    assert.deepEqual(h[0], { status: 200, source: 'web' });
+  });
+
+  it('ukjent varenummer på nettstedet ødelegger ingenting', async () => {
+    const r = await invoke(ola, 'vmp-sync', { vmp_nr: '99999999', preview: true });
+    assert.equal(r.error, null);
+    assert.equal(r.data.details, null);
+  });
+});
+
 describe('admin', () => {
   it('admin leser alt: skap, beholdning, historikk, statistikk', async () => {
     const { data: cellars } = await admin.from('admin_cellars').select('*').eq('id', olaCellar).single();

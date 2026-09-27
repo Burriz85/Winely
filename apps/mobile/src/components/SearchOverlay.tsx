@@ -7,7 +7,7 @@ import { productToWine, useCellar, useWines } from '../lib/data';
 import { supabase } from '../lib/supabase';
 import { figtree, syne, t } from '../lib/theme';
 import { useUI } from '../lib/ui';
-import { offName, vmp } from '../lib/vmp';
+import { offName, previewDetails, vmp } from '../lib/vmp';
 import { sub } from '../lib/wine';
 import { Btn, LinkBtn, WineThumb } from './ui';
 
@@ -48,9 +48,18 @@ export function SearchOverlay() {
     const have = wines.find((w) => w.nr === r.nr);
     let wine: Wine = have ?? r;
     if (!have) {
+      setLoading(true);
       // Finnes produktet fra før (en annen bruker har lagt det inn), gjenbrukes type, årgang og pris.
       const { data } = await supabase.from('products').select('*').eq('vmp_nr', r.nr).maybeSingle();
       if (data) wine = { ...productToWine(data), name: r.name };
+      // Fyll inn fra vinmonopolet.no der vi ikke har data fra før.
+      const d = await previewDetails(r.nr);
+      if (d) {
+        const base = wine;
+        const fill = Object.fromEntries(Object.entries(d).filter(([k]) => !base[k as keyof Wine] || k === 'from' || k === 'to'));
+        wine = { ...base, ...fill };
+      }
+      setLoading(false);
     }
     setSearch(null);
     setScan({ phase: 'res', wine, isNew: !have, qty: 1, ean });

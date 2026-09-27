@@ -15,6 +15,10 @@ export type Product = {
   price: number | null;
   image_url: string | null;
   vmp_updated_at: string | null;
+  taste: string | null;
+  food: string | null;
+  volume_cl: number | null;
+  details_updated_at: string | null;
 };
 
 export type CellarItem = {

@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "fast-xml-parser": "^5.11.1",
     "vitest": "^3.2.7"
   }
 }
