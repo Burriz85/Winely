@@ -12,7 +12,7 @@ import { sub } from '../lib/wine';
 import { Btn, LinkBtn, WineThumb } from './ui';
 
 export function SearchOverlay() {
-  const { search, setSearch, setScan } = useUI();
+  const { search, setSearch, setScan, setManual } = useUI();
   const { cellar } = useCellar();
   const { wines } = useWines(cellar?.id);
   const insets = useSafeAreaInsets();
@@ -105,6 +105,10 @@ export function SearchOverlay() {
             <ChevronRight size={16} color={C.coalSoft} strokeWidth={1.6} />
           </Pressable>
         ))}
+        {!loading && (done || !!ean) && (
+          <LinkBtn label="Finner du ikke vinen? Legg den inn selv" size={14} style={{ alignSelf: 'center', marginTop: 16 }}
+            onPress={() => { setSearch(null); setManual({ ean, name: q.trim() }); }} />
+        )}
       </ScrollView>
     </View>
   );

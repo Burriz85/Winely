@@ -88,7 +88,14 @@ async function run(op: Op) {
   const fail = (e: PgError) => {
     throw isPermanent(e) ? new PermanentError(explain(e, op), op) : new Error(e.message);
   };
-  if (!pid || op.isNew) {
+  if (!w.nr && op.isNew) {
+    // Vin som ikke finnes hos Vinmonopolet. Id-en er laget i appen, så dette tåler å kjøres to ganger.
+    const { error } = await supabase.rpc('create_manual_product', {
+      p_id: w.productId, p_name: w.name, p_producer: w.producer || null, p_type: w.type, p_vintage: w.year,
+      p_price: w.price || null, p_country: w.country || null, p_region: w.region || null,
+    });
+    if (error) fail(error);
+  } else if (!pid || op.isNew) {
     const { data, error } = await supabase.rpc('ensure_product', {
       p_vmp_nr: w.nr, p_name: w.name, p_type: w.type, p_vintage: w.year, p_price: w.price || null,
     });
@@ -109,7 +116,7 @@ async function run(op: Op) {
       .eq('cellar_id', op.cellar_id).eq('product_id', pid);
     if (e2) fail(e2);
   }
-  if (op.isNew) {
+  if (op.isNew && w.nr) {
     // Hent type, pris, druer osv. fra vinmonopolet.no i bakgrunnen. Feiler det, beholdes det brukeren skrev.
     supabase.functions.invoke('vmp-sync', { body: { vmp_nr: w.nr } })
       .then(() => detailsListener?.(op.cellar_id))

@@ -169,6 +169,31 @@ describe('skap, produkter og inn/ut', () => {
   });
 });
 
+describe('viner som ikke finnes hos Vinmonopolet', () => {
+  it('opprettes idempotent, settes inn, kobles til strekkode og kan rettes', async () => {
+    const id = crypto.randomUUID();
+    const args = { p_id: id, p_name: 'Château Musar 2016', p_producer: 'Musar', p_type: 'Rødvin', p_vintage: 2016, p_price: 450, p_country: 'Libanon', p_region: 'Bekaa' };
+    assert.equal((await ola.rpc('create_manual_product', args)).data, id);
+    assert.equal((await ola.rpc('create_manual_product', args)).data, id, 'andre gang er en no-op');
+    const { data: p } = await ola.from('products').select('vmp_nr,name,type,country').eq('id', id).single();
+    assert.deepEqual(p, { vmp_nr: null, name: 'Château Musar 2016', type: 'Rødvin', country: 'Libanon' });
+    assert.ok((await ola.rpc('create_manual_product', { ...args, p_id: crypto.randomUUID(), p_name: ' ' })).error, 'navn kreves');
+
+    const q = await ola.rpc('register_movement', { p_cellar: olaCellar, p_product: id, p_dir: 'in', p_qty: 2, p_client_id: 'm-' + run });
+    assert.equal(q.data, 2);
+    const ean = '72' + String(Date.now()).slice(-11);
+    assert.equal((await ola.rpc('suggest_ean', { p_ean: ean, p_product: id })).data, 'mapped');
+    assert.equal((await kari.rpc('lookup_ean', { p_ean: ean })).data[0].id, id);
+
+    assert.ifError((await ola.rpc('update_manual_details', { p_cellar: olaCellar, p_product: id, p_name: 'Château Musar Rouge 2016', p_producer: 'Château Musar', p_country: 'Libanon', p_region: 'Bekaadalen' })).error);
+    const { data: p2 } = await ola.from('products').select('name,region').eq('id', id).single();
+    assert.deepEqual(p2, { name: 'Château Musar Rouge 2016', region: 'Bekaadalen' });
+    const vmpEdit = await ola.rpc('update_manual_details', { p_cellar: olaCellar, p_product: productA, p_name: 'Tull', p_producer: null, p_country: null, p_region: null });
+    assert.ok(vmpEdit.error, 'Vinmonopolet-viner kan ikke gis nytt navn');
+    await ola.rpc('register_movement', { p_cellar: olaCellar, p_product: id, p_dir: 'out', p_qty: 2, p_client_id: 'm2-' + run });
+  });
+});
+
 describe('admin knytter brukere til skap', () => {
   it('ny bruker med cellar_id blir medlem der og får ikke eget skap', async () => {
     const r = await invoke(admin, 'admin-users', { action: 'create', email: mail('lise'), name: 'Lise', password: PW, cellar_id: olaCellar });
@@ -310,7 +335,7 @@ describe('admin', () => {
     assert.equal(cellars.members, 3); // ola, kari og lise
     assert.equal(Number(cellars.value), 4 * 689);
     const { data: mv } = await admin.from('movements').select('id').eq('cellar_id', olaCellar);
-    assert.equal(mv.length, 5); // inkl. lises ut + inn
+    assert.equal(mv.length, 7); // inkl. lises ut + inn og den manuelle vinen inn + ut
     const { data: days } = await admin.rpc('admin_scans_per_day', { p_days: 14 });
     assert.equal(days.length, 14);
     assert.ok(days.at(-1).n >= 2);

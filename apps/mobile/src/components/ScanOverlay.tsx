@@ -93,7 +93,7 @@ export function ScanOverlay() {
     }
     const p = (data as any[])?.[0];
     if (p) {
-      const have = wines.find((w) => w.nr === p.vmp_nr);
+      const have = wines.find((w) => w.productId === p.id);
       const wine = have ?? productToWine(p);
       setScan({ phase: 'res', wine, isNew: !have, qty: 1, scanned: ean });
     } else {
@@ -210,7 +210,7 @@ function ResultSheet({ scan }: { scan: Extract<Scan, { phase: 'res' }> }) {
       >
         <Handle />
         <View style={rowStyle}>
-          <Text style={[t.label, { color: C.sageDark }]}>Funnet på Vinmonopolet</Text>
+          <Text style={[t.label, { color: C.sageDark }]}>{w.nr ? 'Funnet på Vinmonopolet' : 'Egen registrering'}</Text>
           {scan.isNew
             ? <Text style={{ ...figtree(600), fontSize: 12, color: C.coalSoft }}>Ny i skapet</Text>
             : <Text style={{ ...figtree(600), fontSize: 12, color: C.honeyText }}>{w.qty} i skapet</Text>}
@@ -220,7 +220,7 @@ function ResultSheet({ scan }: { scan: Extract<Scan, { phase: 'res' }> }) {
           <View style={{ gap: 3, minWidth: 0, flex: 1 }}>
             <Text style={{ ...syne(700), fontSize: 22, lineHeight: 24, color: C.coal }}>{w.name}</Text>
             <Text style={{ ...figtree(400), fontSize: 14, color: C.coalSoft }}>{sub(w)}</Text>
-            <Text style={{ ...figtree(400), fontSize: 13, color: C.coalSoft }}>Varenr. {w.nr}</Text>
+            {!!w.nr && <Text style={{ ...figtree(400), fontSize: 13, color: C.coalSoft }}>Varenr. {w.nr}</Text>}
           </View>
         </View>
         {scan.isNew && (

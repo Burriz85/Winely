@@ -10,6 +10,8 @@ export type Scan =
   | { phase: 'res'; wine: Wine; isNew: boolean; qty: number; /** strekkode som skal kobles */ ean?: string; /** strekkoden som ble skannet */ scanned?: string };
 
 export type Search = { ean?: string; prefill?: string };
+/** Vin som ikke finnes hos Vinmonopolet. */
+export type Manual = { ean?: string; name?: string };
 
 type UI = {
   toast: string | null;
@@ -18,6 +20,8 @@ type UI = {
   setScan: (s: Scan | null | ((p: Scan | null) => Scan | null)) => void;
   search: Search | null;
   setSearch: (s: Search | null) => void;
+  manual: Manual | null;
+  setManual: (m: Manual | null) => void;
   profileOpen: boolean;
   setProfileOpen: (v: boolean) => void;
   apiOpen: boolean;
@@ -33,6 +37,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<string | null>(null);
   const [scan, setScan] = useState<Scan | null>(null);
   const [search, setSearch] = useState<Search | null>(null);
+  const [manual, setManual] = useState<Manual | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [apiOpen, setApiOpen] = useState(false);
   const [listView, setLV] = useState<ListView>('Rader');
@@ -58,8 +63,8 @@ export function UIProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(() => ({
-    toast, flash, scan, setScan, search, setSearch, profileOpen, setProfileOpen, apiOpen, setApiOpen, listView, setListView,
-  }), [toast, flash, scan, search, profileOpen, apiOpen, listView, setListView]);
+    toast, flash, scan, setScan, search, setSearch, manual, setManual, profileOpen, setProfileOpen, apiOpen, setApiOpen, listView, setListView,
+  }), [toast, flash, scan, search, manual, profileOpen, apiOpen, listView, setListView]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

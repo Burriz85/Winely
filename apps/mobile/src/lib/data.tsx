@@ -6,6 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, u
 import { AppState } from 'react-native';
 import { useAuth } from './auth';
 import { flush, onDetails, queue, type Op } from './queue';
+import { wineKey } from './wine';
 import { supabase } from './supabase';
 import { vmp } from './vmp';
 
@@ -162,7 +163,7 @@ function applyOps(wines: Wine[], ops: Op[]) {
   let ws = wines;
   for (const o of ops) {
     const d = o.dir === 'in' ? o.qty : -o.qty;
-    const hit = ws.find((w) => w.nr === o.wine.nr);
+    const hit = ws.find((w) => wineKey(w) === wineKey(o.wine));
     ws = hit ? ws.map((w) => (w === hit ? { ...w, qty: w.qty + d } : w)) : d > 0 ? [...ws, { ...o.wine, qty: d }] : ws;
   }
   return ws.filter((w) => w.qty > 0);

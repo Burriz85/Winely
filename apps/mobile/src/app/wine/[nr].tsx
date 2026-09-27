@@ -12,7 +12,7 @@ import { useCellar, useWines } from '../../lib/data';
 import { supabase } from '../../lib/supabase';
 import { figtree, syne, t } from '../../lib/theme';
 import { useUI } from '../../lib/ui';
-import { yr } from '../../lib/wine';
+import { wineKey, yr } from '../../lib/wine';
 
 export default function WineScreen() {
   const { nr } = useLocalSearchParams<{ nr: string }>();
@@ -23,7 +23,7 @@ export default function WineScreen() {
   const { wines, isLoading } = useWines(cellar?.id);
   const { setScan, flash } = useUI();
   const [editing, setEditing] = useState(false);
-  const w = wines.find((x) => x.nr === nr);
+  const w = wines.find((x) => wineKey(x) === nr);
   const back = () => router.navigate('/');
 
   if (!w) {
@@ -57,7 +57,7 @@ export default function WineScreen() {
         </Pressable>
       </View>
       <View style={{ paddingTop: 20, paddingHorizontal: 20, paddingBottom: 28, gap: 20 }}>
-        <HeroBottle uri={w.img || vmpImage(w.nr)} />
+        <HeroBottle uri={w.img || (w.nr ? vmpImage(w.nr) : '')} />
         <View style={{ gap: 6 }}>
           <Text style={t.label}>{[w.type, w.country].filter(Boolean).join(' · ')}</Text>
           <Text style={{ ...syne(800), fontSize: 30, lineHeight: 32, letterSpacing: -0.9, color: C.coal }}>{w.name}</Text>
@@ -90,8 +90,8 @@ export default function WineScreen() {
 
         <View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: C.sage }}>
-            <Text style={[t.label, { color: C.sageDark }]}>Fra Vinmonopolet</Text>
-            <Text style={{ ...figtree(400), fontSize: 12, color: C.coalSoft }}>Varenr. {w.nr}</Text>
+            <Text style={[t.label, { color: C.sageDark }]}>{w.nr ? 'Fra Vinmonopolet' : 'Egen registrering'}</Text>
+            {!!w.nr && <Text style={{ ...figtree(400), fontSize: 12, color: C.coalSoft }}>Varenr. {w.nr}</Text>}
           </View>
           <Row k="Pris" v={w.price ? kr(w.price) : ''} />
           <Row k="Distrikt" v={w.region} />
@@ -101,11 +101,13 @@ export default function WineScreen() {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, gap: 12 }}>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Btn label="Endre" kind="sage" size={13} pad={14} onPress={() => setEditing(true)} />
-              <Btn label="Oppdater fra API" kind="sage" size={13} pad={14} onPress={refresh} />
+              {!!w.nr && <Btn label="Oppdater fra API" kind="sage" size={13} pad={14} onPress={refresh} />}
             </View>
-            <Pressable onPress={() => Linking.openURL(vmpProductUrl(w.nr))}>
-              <Text style={{ ...figtree(600), fontSize: 14, color: C.sageDark }}>vinmonopolet.no →</Text>
-            </Pressable>
+            {!!w.nr && (
+              <Pressable onPress={() => Linking.openURL(vmpProductUrl(w.nr))}>
+                <Text style={{ ...figtree(600), fontSize: 14, color: C.sageDark }}>vinmonopolet.no →</Text>
+              </Pressable>
+            )}
           </View>
         </View>
       </View>

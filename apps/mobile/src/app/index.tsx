@@ -10,7 +10,7 @@ import { useAuth } from '../lib/auth';
 import { useCellar, useVmpStatus, useWines } from '../lib/data';
 import { em, figtree, syne, t } from '../lib/theme';
 import { useUI } from '../lib/ui';
-import { sub, yr } from '../lib/wine';
+import { sub, wineKey, yr } from '../lib/wine';
 
 const FILTERS = ['Alle', ...WINE_TYPES] as const;
 
@@ -49,7 +49,7 @@ export default function CellarScreen() {
   const total = wines.reduce((a, w) => a + w.qty, 0);
   const ready = wines.filter((w) => now >= w.from).reduce((a, w) => a + w.qty, 0);
   const value = wines.reduce((a, w) => a + w.qty * w.price, 0);
-  const open = (w: Wine) => router.navigate({ pathname: '/wine/[nr]', params: { nr: w.nr } });
+  const open = (w: Wine) => router.navigate({ pathname: '/wine/[nr]', params: { nr: wineKey(w) } });
 
   const groups: { label: string; items: Wine[] }[] = [
     ...WINE_TYPES.map((ty) => ({ label: ty as string, items: f.filter((w) => w.type === ty) })),
@@ -68,7 +68,7 @@ export default function CellarScreen() {
   }
 
   const windowRow = (w: Wine, year: number, color: string) => (
-    <Pressable key={w.productId ?? w.nr} onPress={() => open(w)}
+    <Pressable key={wineKey(w)} onPress={() => open(w)}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: C.ivoryDark }}>
       <Text style={{ width: 44, ...syne(700), fontSize: 15, color }}>{year}</Text>
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
@@ -123,7 +123,7 @@ export default function CellarScreen() {
                 <Text style={[t.label, { color: C.sageDark }]}>{g.items.reduce((a, w) => a + w.qty, 0)} fl.</Text>
               </View>
               {g.items.map((w) => (
-                <Pressable key={w.productId ?? w.nr} onPress={() => open(w)}
+                <Pressable key={wineKey(w)} onPress={() => open(w)}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: C.ivoryDark }}>
                   <WineThumb wine={w} />
                   <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
@@ -142,7 +142,7 @@ export default function CellarScreen() {
       {listView === 'Kort' && (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
           {f.map((w) => (
-            <Pressable key={w.productId ?? w.nr} onPress={() => open(w)} style={{ width: '47.5%', flexGrow: 1, backgroundColor: C.ivoryDark, borderRadius: 4, overflow: 'hidden' }}>
+            <Pressable key={wineKey(w)} onPress={() => open(w)} style={{ width: '47.5%', flexGrow: 1, backgroundColor: C.ivoryDark, borderRadius: 4, overflow: 'hidden' }}>
               <View style={{ height: 96, padding: 12, backgroundColor: typeColor(w.type), flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
                 <View style={{ justifyContent: 'space-between' }}>
                   <Text style={{ ...figtree(600), fontSize: 10, letterSpacing: em(10, 0.22), textTransform: 'uppercase', color: C.ivory }}>{yr(w)}</Text>

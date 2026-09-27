@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import { figtree, syne } from '../lib/theme';
 import { useUI } from '../lib/ui';
 import { Sheet } from './Sheet';
-import { Btn, Chip, NumField } from './ui';
+import { Btn, Chip, Field, NumField } from './ui';
 
 /**
  * Rett opp type, årgang, pris og drikkevindu. API-et gir bare navn og varenummer,
@@ -22,11 +22,23 @@ export function EditWineSheet({ wine, cellarId, onClose }: { wine: Wine; cellarI
   const [from, setFrom] = useState<number | null>(wine.from);
   const [to, setTo] = useState<number | null>(wine.to);
   const [busy, setBusy] = useState(false);
+  const manual = !wine.nr;
+  const [name, setName] = useState(wine.name);
+  const [producer, setProducer] = useState(wine.producer);
+  const [country, setCountry] = useState(wine.country);
+  const [region, setRegion] = useState(wine.region);
 
   const save = async () => {
     if (!type) return flash('Velg type');
     if (from && to && from > to) return flash('Drikkevinduet slutter før det starter');
+    if (manual && !name.trim()) return flash('Navn mangler');
     setBusy(true);
+    if (manual) {
+      const r = await supabase.rpc('update_manual_details', {
+        p_cellar: cellarId, p_product: wine.productId, p_name: name, p_producer: producer, p_country: country, p_region: region,
+      });
+      if (r.error) { setBusy(false); return flash('Kunne ikke lagre: ' + r.error.message); }
+    }
     const { error } = await supabase.rpc('update_wine', {
       p_cellar: cellarId, p_product: wine.productId, p_type: type, p_vintage: year, p_price: price, p_from: from, p_to: to,
     });
@@ -44,8 +56,16 @@ export function EditWineSheet({ wine, cellarId, onClose }: { wine: Wine; cellarI
     <Sheet onClose={onClose} gap={14}>
       <Text style={{ ...syne(700), fontSize: 22, textTransform: 'uppercase', color: C.coal }}>Endre vin</Text>
       <Text style={{ ...figtree(400), fontSize: 13, lineHeight: 19, color: C.coalSoft }}>
-        Vinmonopolet-API-et gir bare navn og varenummer. Type, årgang og pris deles med andre som har samme vin.
+        {manual ? 'Vinen finnes ikke hos Vinmonopolet, så alt her fylles inn for hånd.' : 'Type, årgang og pris deles med andre som har samme vin. «Oppdater fra API» henter dem fra Vinmonopolet på nytt.'}
       </Text>
+      {manual && (
+        <>
+          <Field label="Navn" value={name} onChangeText={setName} />
+          <Field label="Produsent" value={producer} onChangeText={setProducer} />
+          <Field label="Land" value={country} onChangeText={setCountry} />
+          <Field label="Distrikt" value={region} onChangeText={setRegion} />
+        </>
+      )}
       <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
         {WINE_TYPES.map((ty) => <Chip key={ty} label={ty} pad={12} active={type === ty} onPress={() => setType(ty)} />)}
       </View>

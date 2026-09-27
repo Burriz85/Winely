@@ -10,6 +10,7 @@ import { Platform, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ApiSheet } from '../components/ApiSheet';
 import { Login } from '../components/Login';
+import { ManualWineSheet } from '../components/ManualWineSheet';
 import { ProfileSheet } from '../components/ProfileSheet';
 import { ScanOverlay } from '../components/ScanOverlay';
 import { SearchOverlay } from '../components/SearchOverlay';
@@ -35,6 +36,7 @@ function Shell() {
       <TabBar />
       <ScanOverlay />
       <SearchOverlay />
+      <ManualWineSheet />
       <ApiSheet />
       <ProfileSheet />
       <Toast />
