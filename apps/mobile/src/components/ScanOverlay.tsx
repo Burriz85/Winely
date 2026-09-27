@@ -4,7 +4,7 @@ import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'ex
 import * as Haptics from 'expo-haptics';
 import { X } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { productToWine, useCellar, useWines } from '../lib/data';
 import { queue, uuid } from '../lib/queue';
@@ -13,6 +13,17 @@ import { figtree, syne, t } from '../lib/theme';
 import { useUI, type Scan } from '../lib/ui';
 import { sub } from '../lib/wine';
 import { Btn, Chip, Handle, LinkBtn, NumField, WineThumb } from './ui';
+
+// Nettlesere uten innebygd BarcodeDetector (Safari på iPhone) bruker en WASM-dekoder.
+// Som standard hentes den fra jsDelivr; da feiler skanningen stille hvis CDN-et ikke svarer.
+// scripts/copy-zxing.mjs legger fila i public/, og her pekes dekoderen dit.
+if (Platform.OS === 'web') {
+  import('barcode-detector')
+    .then((m) => m.setZXingModuleOverrides({
+      locateFile: (path: string, prefix: string) => (path.endsWith('.wasm') ? '/zxing_reader.wasm' : prefix + path),
+    }))
+    .catch(() => {});
+}
 
 /** UPC-A (12 siffer) rapporteres som EAN-13 med innledende 0 på iOS. Samme nøkkel på alle enheter. */
 const normalizeEan = (s: string) => {
@@ -47,6 +58,8 @@ export function ScanOverlay() {
   const insets = useSafeAreaInsets();
   const [perm, requestPerm] = useCameraPermissions();
   const [areaH, setAreaH] = useState(0);
+  const [manual, setManual] = useState<string | null>(null);
+  const [camError, setCamError] = useState<string | null>(null);
   const lock = useRef(false);
 
   const camActive = scan?.phase === 'cam' || scan?.phase === 'lookup';
@@ -55,12 +68,15 @@ export function ScanOverlay() {
   }, [camActive, perm, requestPerm]);
   useEffect(() => {
     if (scan?.phase === 'cam') lock.current = false;
-  }, [scan?.phase]);
+    if (!scan) { setManual(null); setCamError(null); }
+  }, [scan?.phase, scan]);
 
   if (!scan) return null;
 
-  const onScanned = async (r: BarcodeScanningResult) => {
-    const ean = normalizeEan(r.data);
+  const onScanned = (r: BarcodeScanningResult) => lookup(r.data);
+
+  const lookup = async (raw: string) => {
+    const ean = normalizeEan(raw);
     if (lock.current || !/^\d{8,14}$/.test(ean)) return;
     lock.current = true;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -94,7 +110,8 @@ export function ScanOverlay() {
             facing="back"
             barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a'] }}
             // Skanneren står på pause mens arket er åpent eller et oppslag pågår.
-            onBarcodeScanned={scan.phase === 'cam' ? onScanned : undefined}
+            onBarcodeScanned={scan.phase === 'cam' && manual === null ? onScanned : undefined}
+            onMountError={(e) => setCamError(e.message || 'Kameraet kunne ikke starte.')}
           />
         )}
         <Pressable onPress={() => setScan(null)} accessibilityLabel="Lukk"
@@ -116,6 +133,23 @@ export function ScanOverlay() {
                 <Pressable onPress={() => requestPerm()} style={{ height: 44, paddingHorizontal: 18, borderRadius: 22, borderWidth: 1, borderColor: C.sageLight, justifyContent: 'center' }}>
                   <Text style={{ ...figtree(500), fontSize: 14, color: C.ivory }}>Gi tilgang til kameraet</Text>
                 </Pressable>
+              )}
+              {camError && <Text style={{ ...figtree(400), fontSize: 13, color: C.honeyTint, textAlign: 'center' }}>{camError}</Text>}
+              {manual === null ? (
+                <Pressable onPress={() => setManual('')}
+                  style={{ height: 44, paddingHorizontal: 18, borderRadius: 22, borderWidth: 1, borderColor: C.sageLight, justifyContent: 'center' }}>
+                  <Text style={{ ...figtree(500), fontSize: 14, color: C.ivory }}>Skriv inn strekkoden</Text>
+                </Pressable>
+              ) : (
+                <View style={{ flexDirection: 'row', gap: 8, width: 300 }}>
+                  <TextInput value={manual} onChangeText={(t) => setManual(t.replace(/\D/g, ''))} autoFocus
+                    keyboardType="number-pad" inputMode="numeric" placeholder="13 siffer under strekene" placeholderTextColor={C.sageLight}
+                    onSubmitEditing={() => lookup(manual)}
+                    style={{ flex: 1, height: 44, paddingHorizontal: 14, borderRadius: 22, borderWidth: 1, borderColor: C.sageLight, color: C.ivory, fontSize: 15, ...figtree(400), outlineStyle: 'none' } as object} />
+                  <Pressable onPress={() => lookup(manual)} style={{ height: 44, paddingHorizontal: 16, borderRadius: 22, backgroundColor: C.sageDark, justifyContent: 'center' }}>
+                    <Text style={{ ...figtree(600), fontSize: 14, color: C.ivory }}>Slå opp</Text>
+                  </Pressable>
+                </View>
               )}
               <Pressable onPress={() => { setScan(null); setSearch({}); }}
                 style={{ height: 44, paddingHorizontal: 18, borderRadius: 22, borderWidth: 1, borderColor: C.sageLight, justifyContent: 'center' }}>

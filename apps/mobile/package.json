@@ -28,7 +28,8 @@
     "react-native-screens": "~4.26.0",
     "react-native-svg": "15.15.4",
     "react-native-url-polyfill": "^4.0.0",
-    "react-native-web": "~0.21.0"
+    "react-native-web": "~0.21.0",
+    "barcode-detector": "3.2.2"
   },
   "devDependencies": {
     "@types/react": "~19.2.2"
@@ -39,7 +40,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "export:web": "expo export -p web"
+    "export:web": "node scripts/copy-zxing.mjs && expo export -p web"
   },
   "private": true
 }
