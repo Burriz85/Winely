@@ -1,5 +1,6 @@
 // POST – kun admin. Brukere opprettes av admin med passord; det sendes ingen e-post.
-//   { email, name, password, action: 'create' }   ny bruker (email kan være <brukernavn>@vinskap.local)
+//   { email, name, password, action: 'create', cellar_id? }   ny bruker (email kan være <brukernavn>@vinskap.local);
+//                                                 med cellar_id blir brukeren medlem av det skapet i stedet for å få eget
 //   { id, email, password, action: 'set_password' } nytt passord
 //   { id, email, action: 'deactivate' }            status = deaktivert + utestengt fra innlogging
 //   { id, email, action: 'reactivate' }            status = aktiv + utestenging opphevet
@@ -36,7 +37,11 @@ Deno.serve(async (req) => {
     const name = String(body.name ?? '').trim();
     if (!name) return fail('Navn mangler');
     if (password.length < MIN_PW) return fail(`Passordet må ha minst ${MIN_PW} tegn`);
-    const { error } = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { name } });
+    // join_cellar: bli medlem av et eksisterende skap i stedet for å få eget (handle_new_user).
+    const join = typeof body.cellar_id === 'string' && /^[0-9a-f-]{36}$/i.test(body.cellar_id) ? body.cellar_id : undefined;
+    const { error } = await admin.auth.admin.createUser({
+      email, password, email_confirm: true, user_metadata: join ? { name, join_cellar: join } : { name },
+    });
     if (error) return fail(/already/i.test(error.message) ? 'Brukeren finnes allerede' : error.message);
     await log('Opprettet bruker');
     return json({ ok: true });

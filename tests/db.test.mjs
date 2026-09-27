@@ -169,6 +169,43 @@ describe('skap, produkter og inn/ut', () => {
   });
 });
 
+describe('admin knytter brukere til skap', () => {
+  it('ny bruker med cellar_id blir medlem der og får ikke eget skap', async () => {
+    const r = await invoke(admin, 'admin-users', { action: 'create', email: mail('lise'), name: 'Lise', password: PW, cellar_id: olaCellar });
+    assert.equal(r.error, null);
+    const lise = await signedIn(mail('lise'));
+    const { data: cellars } = await lise.from('cellars').select('id');
+    assert.deepEqual(cellars.map((c) => c.id), [olaCellar]);
+    const { data: items } = await lise.from('cellar_items').select('qty').eq('cellar_id', olaCellar).eq('product_id', productA).single();
+    assert.ok(items.qty > 0, 'ser samme innhold');
+    const m = await lise.rpc('register_movement', { p_cellar: olaCellar, p_product: productA, p_dir: 'out', p_qty: 1, p_client_id: 'lise-' + run });
+    assert.ifError(m.error);
+    await lise.rpc('register_movement', { p_cellar: olaCellar, p_product: productA, p_dir: 'in', p_qty: 1, p_client_id: 'lise2-' + run });
+  });
+
+  it('ugyldig cellar_id gir vanlig eget skap', async () => {
+    const r = await invoke(admin, 'admin-users', { action: 'create', email: mail('tor'), name: 'Tor', password: PW, cellar_id: '00000000-0000-0000-0000-000000000000' });
+    assert.equal(r.error, null);
+    const tor = await signedIn(mail('tor'));
+    const { data } = await tor.from('cellar_members').select('role');
+    assert.deepEqual(data, [{ role: 'owner' }]);
+  });
+
+  it('admin_set_member legger til og fjerner, men ikke eieren, og bare for admin', async () => {
+    const { data: users } = await admin.rpc('admin_users');
+    const perId = users.find((u) => u.email === `per${run}@vinskap.local`).id;
+    const olaId = users.find((u) => u.email === mail('ola')).id;
+    assert.ifError((await admin.rpc('admin_set_member', { p_cellar: olaCellar, p_user: perId, p_add: true })).error);
+    const { data: seen } = await per.from('cellars').select('id').eq('id', olaCellar);
+    assert.equal(seen.length, 1);
+    assert.ifError((await admin.rpc('admin_set_member', { p_cellar: olaCellar, p_user: perId, p_add: false })).error);
+    const { data: gone } = await per.from('cellars').select('id').eq('id', olaCellar);
+    assert.equal(gone.length, 0);
+    assert.ok((await admin.rpc('admin_set_member', { p_cellar: olaCellar, p_user: olaId, p_add: false })).error, 'eier kan ikke fjernes');
+    assert.ok((await ola.rpc('admin_set_member', { p_cellar: olaCellar, p_user: perId, p_add: true })).error, 'bare admin');
+  });
+});
+
 describe('strekkoder', () => {
   it('ukjent → forslag blir kobling → treff teller', async () => {
     const miss = await ola.rpc('lookup_ean', { p_ean: EAN });
@@ -270,10 +307,10 @@ describe('admin', () => {
   it('admin leser alt: skap, beholdning, historikk, statistikk', async () => {
     const { data: cellars } = await admin.from('admin_cellars').select('*').eq('id', olaCellar).single();
     assert.equal(cellars.bottles, 4);
-    assert.equal(cellars.members, 2);
+    assert.equal(cellars.members, 3); // ola, kari og lise
     assert.equal(Number(cellars.value), 4 * 689);
     const { data: mv } = await admin.from('movements').select('id').eq('cellar_id', olaCellar);
-    assert.equal(mv.length, 3);
+    assert.equal(mv.length, 5); // inkl. lises ut + inn
     const { data: days } = await admin.rpc('admin_scans_per_day', { p_days: 14 });
     assert.equal(days.length, 14);
     assert.ok(days.at(-1).n >= 2);

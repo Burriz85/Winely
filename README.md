@@ -106,10 +106,13 @@ Handoffen sier at farger, typografi, avstander og tekster skal være slik de st�
 - Du kan ikke logge ut mens det ligger registreringer i offline-køen. Da ville de gått tapt.
 
 **Admin**
+- «Ny bruker» kan knytte brukeren til et eksisterende skap (da får hen ikke eget skap), og Skap-siden kan legge til og fjerne medlemmer (`0006`, `admin_set_member`).
 - «Kvote» finnes ikke i API-et. Verdien kommer fra `VITE_VMP_QUOTA`.
 - «Endre» på en strekkode oppretter produktet med navn fra Vinmonopolet hvis varenummeret ikke finnes fra før.
 
 ## Kjente begrensninger
+
+- Type, årgang, pris, distrikt, druer, alkohol, smak og mat hentes fra vinmonopolet.no sitt eget nettsted (`vmpws/v3`), som **ikke** er et offisielt API. Det kan endres eller stenges uten varsel; da virker appen som før, og feltene fylles inn for hånd med «Endre».
 
 - Vinmonopolet-API-et er testet mot det ekte endepunktet 27.09.2026: proxyen, søk på ett og to ord (mellomrom → `_`) og produktbilder virker. De automatiske testene går fortsatt mot `tests/mock-vmp.mjs`.
 - **Strekkodeskanning er ikke testet med en ekte strekkode.** Kameraflyten er testet med et falskt kamera, og oppslag og kobling er testet i databasen. På web bruker `expo-camera` nettleserens `BarcodeDetector` der den finnes (Chrome på Android). Ellers laster den en WASM-polyfill fra CDN, blant annet i Safari på iOS.

@@ -1,10 +1,23 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { kr, relTime } from '@vinskap/shared';
+import { useState } from 'react';
 import { useAdmin } from '../App';
 import { PageHead, Thumb } from '../components/common';
-import { useCellarItems, useCellars, useMembers, useNameOf } from '../data';
+import { useCellarItems, useCellars, useMembers, useNameOf, useUsers } from '../data';
+import { supabase } from '../supabase';
 
 export function Cellars() {
-  const { selCellar, openCellar, openUser } = useAdmin();
+  const { selCellar, openCellar, openUser, flash } = useAdmin();
+  const qc = useQueryClient();
+  const users = useUsers().data ?? [];
+  const [addUser, setAddUser] = useState('');
+  const setMember = async (cellarId: string, userId: string, add: boolean) => {
+    const { error } = await supabase.rpc('admin_set_member', { p_cellar: cellarId, p_user: userId, p_add: add });
+    if (error) return flash(error.message);
+    setAddUser('');
+    flash(add ? 'Lagt til i skapet' : 'Fjernet fra skapet');
+    ['members', 'cellars', 'users', 'activity'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+  };
   const cellars = useCellars().data ?? [];
   const members = useMembers().data ?? [];
   const items = useCellarItems(selCellar);
@@ -13,7 +26,7 @@ export function Cellars() {
 
   return (
     <div className="page">
-      <PageHead label="Alle skap · kun lesing" title="Skap" />
+      <PageHead label="Alle skap · innholdet kan bare leses" title="Skap" />
       <div className="rows">
         {cellars.map((c) => (
           <div key={c.id} className="clickable" onClick={() => openCellar(c.id)} style={{
@@ -42,10 +55,25 @@ export function Cellars() {
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {members.filter((m) => m.cellar_id === sc.id).map((m) => (
-              <button key={m.user_id} onClick={() => openUser(m.user_id)} style={{ height: 32, padding: '0 12px', border: '1px solid var(--sage-light)', borderRadius: 16, background: 'var(--ivory)', fontSize: 13, color: 'var(--coal)' }}>
-                {nameOf(m.user_id)} · {m.role === 'owner' ? 'Eier' : 'Medlem'}
-              </button>
+              <span key={m.user_id} style={{ display: 'inline-flex', alignItems: 'center', height: 32, border: '1px solid var(--sage-light)', borderRadius: 16, background: 'var(--ivory)', fontSize: 13 }}>
+                <button onClick={() => openUser(m.user_id)} style={{ height: 30, padding: '0 10px 0 12px', border: 0, background: 'transparent', fontSize: 13, color: 'var(--coal)' }}>
+                  {nameOf(m.user_id)} · {m.role === 'owner' ? 'Eier' : 'Medlem'}
+                </button>
+                {m.role !== 'owner' && (
+                  <button aria-label="Fjern fra skapet" title="Fjern fra skapet" onClick={() => setMember(sc.id, m.user_id, false)}
+                    style={{ height: 30, width: 28, border: 0, borderLeft: '1px solid var(--sage-light)', background: 'transparent', color: 'var(--red)', fontSize: 15 }}>×</button>
+                )}
+              </span>
             ))}
+            <span style={{ display: 'inline-flex', gap: 6 }}>
+              <select className="field" value={addUser} onChange={(e) => setAddUser(e.target.value)} style={{ height: 32, width: 'auto', fontSize: 13, padding: '0 8px' }}>
+                <option value="">Legg til bruker …</option>
+                {users.filter((u) => !members.some((m) => m.cellar_id === sc.id && m.user_id === u.id)).map((u) => (
+                  <option key={u.id} value={u.id}>{u.name || u.email}</option>
+                ))}
+              </select>
+              {addUser && <button className="btn primary" style={{ height: 32 }} onClick={() => setMember(sc.id, addUser, true)}>Legg til</button>}
+            </span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--ivory)', borderRadius: 4, padding: '0 14px' }}>
             {(items.data ?? []).map((i) => (

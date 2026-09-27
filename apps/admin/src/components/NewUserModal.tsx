@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { displayLogin, toLoginEmail } from '@vinskap/shared';
 import { useState } from 'react';
 import { useAdmin } from '../App';
+import { useCellars, useNameOf } from '../data';
 import { adminAction } from '../supabase';
 
 /** 12 tegn uten tegn som er lette å forveksle (0/O, 1/l/I). */
@@ -17,6 +18,9 @@ export function NewUserModal({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('');
   const [login, setLogin] = useState('');
   const [pw, setPw] = useState(makePassword);
+  const [cellar, setCellar] = useState('');
+  const cellars = useCellars().data ?? [];
+  const nameOf = useNameOf();
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<{ login: string; pw: string } | null>(null);
 
@@ -25,7 +29,7 @@ export function NewUserModal({ onClose }: { onClose: () => void }) {
     if (!name.trim() || !email) return flash('Fyll inn navn og et gyldig brukernavn eller e-post');
     if (pw.length < 8) return flash('Passordet må ha minst 8 tegn');
     setBusy(true);
-    const err = await adminAction({ action: 'create', email, name: name.trim(), password: pw });
+    const err = await adminAction({ action: 'create', email, name: name.trim(), password: pw, ...(cellar ? { cellar_id: cellar } : {}) });
     setBusy(false);
     if (err) return flash(err);
     ['users', 'activity', 'cellars', 'members'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
@@ -60,6 +64,13 @@ export function NewUserModal({ onClose }: { onClose: () => void }) {
                 <input className="field" value={pw} onChange={(e) => setPw(e.target.value)} style={{ fontFamily: 'ui-monospace,monospace' }} />
                 <button className="btn" type="button" onClick={() => setPw(makePassword())}>Nytt</button>
               </div></label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>{label('Skap')}
+              <select className="field" value={cellar} onChange={(e) => setCellar(e.target.value)}>
+                <option value="">Eget, nytt skap</option>
+                {cellars.map((c) => <option key={c.id} value={c.id}>Del «{c.name}» med {nameOf(c.owner_id)}</option>)}
+              </select>
+              {cellar && <span className="muted" style={{ fontSize: 12 }}>Brukeren ser og registrerer i dette skapet og får ikke eget skap.</span>}
+            </label>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button className="btn" onClick={onClose}>Avbryt</button>
               <button className="btn primary" onClick={send} disabled={busy}>{busy ? 'Oppretter …' : 'Opprett bruker'}</button>
