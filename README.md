@@ -110,6 +110,14 @@ Handoffen sier at farger, typografi, avstander og tekster skal være slik de st�
 - «Kvote» finnes ikke i API-et. Verdien kommer fra `VITE_VMP_QUOTA`.
 - «Endre» på en strekkode oppretter produktet med navn fra Vinmonopolet hvis varenummeret ikke finnes fra før.
 
+## Installere på telefonen
+
+Webappen kan legges på hjem-skjermen og åpnes som en egen app uten nettleserlinje (`public/manifest.webmanifest`, `public/sw.js`).
+- **iPhone (Safari):** Del-knappen → «Legg til på Hjem-skjerm».
+- **Android (Chrome):** menyen ⋮ → «Installer app» / «Legg til på startskjermen».
+
+Service workeren lagrer siden og byggefilene, så appen åpner også uten nett. Supabase-kall og Vinmonopolet-bilder mellomlagres ikke.
+
 ## Kjente begrensninger
 
 - Type, årgang, pris, distrikt, druer, alkohol, smak og mat hentes fra vinmonopolet.no sitt eget nettsted (`vmpws/v3`), som **ikke** er et offisielt API. Det kan endres eller stenges uten varsel; da virker appen som før, og feltene fylles inn for hånd med «Endre».

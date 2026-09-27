@@ -5,7 +5,7 @@ import { C } from '@vinskap/shared';
 import { useFonts } from 'expo-font';
 import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ApiSheet } from '../components/ApiSheet';
@@ -45,6 +45,12 @@ function Shell() {
 }
 
 export default function RootLayout() {
+  // Installerbar webapp: service workeren gjør at appen åpner raskt og uten nett fra hjem-skjermen.
+  useEffect(() => {
+    if (Platform.OS === 'web' && !__DEV__ && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  }, []);
   const [qc] = useState(() => new QueryClient({ defaultOptions: { queries: { staleTime: 30_000 } } }));
   const [fontsLoaded] = useFonts({
     Syne_600SemiBold, Syne_700Bold, Syne_800ExtraBold, Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold,
