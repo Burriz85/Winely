@@ -108,7 +108,7 @@ Handoffen sier at farger, typografi, avstander og tekster skal være slik de st�
 
 ## Kjente begrensninger
 
-- **Vinmonopolet-API-et er ikke testet mot det ekte endepunktet her.** Alt går mot `tests/mock-vmp.mjs`, som er bygget etter funnene i handoffen. At `_` i stedet for mellomrom faktisk gir treff, er handoffens påstand. Jeg har ikke bekreftet det.
+- Vinmonopolet-API-et er testet mot det ekte endepunktet 27.09.2026: proxyen, søk på ett og to ord (mellomrom → `_`) og produktbilder virker. De automatiske testene går fortsatt mot `tests/mock-vmp.mjs`.
 - **Strekkodeskanning er ikke testet med en ekte strekkode.** Kameraflyten er testet med et falskt kamera, og oppslag og kobling er testet i databasen. På web bruker `expo-camera` nettleserens `BarcodeDetector` der den finnes (Chrome på Android). Ellers laster den en WASM-polyfill fra CDN, blant annet i Safari på iOS.
 - **Duplikater** oppstår bare for produkter uten varenummer. Appen har ingen måte å lage slike på (alt går via Vinmonopolet-søk), så siden blir tom i praksis til noen legger inn produkter manuelt.
 - Produktbilder hentes fra bilder.vinmonopolet.no under deres vilkår. Mangler bildet (404), vises fargestripen for vintypen.
