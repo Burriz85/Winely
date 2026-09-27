@@ -1,3 +1,4 @@
+import { displayLogin, toLoginEmail } from '@vinskap/shared';
 import { useState } from 'react';
 import { supabase } from '../supabase';
 
@@ -11,9 +12,11 @@ export function Login({ denied, email: deniedEmail }: { denied?: boolean; email?
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true); setErr(null);
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password: pw });
+    const login = toLoginEmail(email);
+    if (!login) { setBusy(false); return setErr('Skriv inn brukernavn eller e-post.'); }
+    const { error } = await supabase.auth.signInWithPassword({ email: login, password: pw });
     setBusy(false);
-    if (error) setErr(error.message.toLowerCase().includes('invalid') ? 'Feil e-post eller passord.' : error.message.toLowerCase().includes('banned') ? 'Kontoen er deaktivert.' : error.message);
+    if (error) setErr(error.message.toLowerCase().includes('invalid') ? 'Feil brukernavn eller passord.' : error.message.toLowerCase().includes('banned') ? 'Kontoen er deaktivert.' : error.message);
   };
 
   return (
@@ -26,14 +29,14 @@ export function Login({ denied, email: deniedEmail }: { denied?: boolean; email?
         </div>
         {denied ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div className="err">{deniedEmail} har ikke admin-tilgang.</div>
+            <div className="err">{displayLogin(deniedEmail)} har ikke admin-tilgang.</div>
             <button className="btn" style={{ height: 52, fontSize: 15 }} onClick={() => supabase.auth.signOut()}>Logg ut</button>
           </div>
         ) : (
           <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <span className="label">E-post</span>
-              <input className="field" style={{ height: 48, fontSize: 16 }} type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <span className="label">Brukernavn</span>
+              <input className="field" style={{ height: 48, fontSize: 16 }} autoCapitalize="none" spellCheck={false} autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} />
             </label>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span className="label">Passord</span>

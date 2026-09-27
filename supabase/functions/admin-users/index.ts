@@ -1,15 +1,14 @@
-// POST – kun admin.
-//   { email, name }                     inviter (Supabase-invitasjon med kode)
-//   { email, action: 'reset' }          e-post med kode for nytt passord
-//   { id, email, action: 'resend' }     send invitasjonen på nytt
-//   { id, email, action: 'revoke' }     trekk tilbake en ubesvart invitasjon (sletter brukeren)
-//   { id, email, action: 'deactivate' } status = deaktivert + utestengt fra innlogging
-//   { id, email, action: 'reactivate' } status = aktiv + utestenging opphevet
-// Deploy: supabase functions deploy admin-invite
+// POST – kun admin. Brukere opprettes av admin med passord; det sendes ingen e-post.
+//   { email, name, password, action: 'create' }   ny bruker (email kan være <brukernavn>@vinskap.local)
+//   { id, email, password, action: 'set_password' } nytt passord
+//   { id, email, action: 'deactivate' }            status = deaktivert + utestengt fra innlogging
+//   { id, email, action: 'reactivate' }            status = aktiv + utestenging opphevet
+// Deploy: supabase functions deploy admin-users
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { CORS, json } from '../_shared/cors.ts';
 
 const BAN_FOREVER = '876000h'; // 100 år
+const MIN_PW = 8;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
@@ -21,8 +20,9 @@ Deno.serve(async (req) => {
   if (!isAdmin) return new Response('Forbidden', { status: 403, headers: CORS });
 
   const body = await req.json().catch(() => ({}));
-  const action: string = body.action ?? 'invite';
+  const action: string = body.action ?? '';
   const email = String(body.email ?? '').trim().toLowerCase();
+  const password = String(body.password ?? '');
   const id: string | undefined = body.id;
   const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const { data: me } = await caller.auth.getUser();
@@ -30,46 +30,29 @@ Deno.serve(async (req) => {
   const log = (what: string) => admin.from('audit_log').insert({ actor, kind: 'admin', action: what, target: email });
   const fail = (msg: string, status = 400) => json({ ok: false, error: msg }, status);
 
-  if (!/^\S+@\S+\.\S+$/.test(email)) return fail('Ugyldig e-post');
+  if (!/^\S+@\S+\.\S+$/.test(email)) return fail('Ugyldig brukernavn eller e-post');
 
-  switch (action) {
-    case 'invite': {
-      const name = String(body.name ?? '').trim();
-      if (!name) return fail('Navn mangler');
-      const { error } = await admin.auth.admin.inviteUserByEmail(email, { data: { name } });
-      if (error) return fail(error.message);
-      await admin.from('service_invites').upsert({ email, name, invited_by: actor });
-      await log('Inviterte');
-      return json({ ok: true });
-    }
-    case 'reset': {
-      const { error } = await admin.auth.resetPasswordForEmail(email);
-      if (error) return fail(error.message);
-      await log('Nullstilte passord for');
-      return json({ ok: true });
-    }
+  if (action === 'create') {
+    const name = String(body.name ?? '').trim();
+    if (!name) return fail('Navn mangler');
+    if (password.length < MIN_PW) return fail(`Passordet må ha minst ${MIN_PW} tegn`);
+    const { error } = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { name } });
+    if (error) return fail(/already/i.test(error.message) ? 'Brukeren finnes allerede' : error.message);
+    await log('Opprettet bruker');
+    return json({ ok: true });
   }
 
   // Resten gjelder en bestemt bruker. Sjekk at id og e-post hører sammen.
   if (!id) return fail('id mangler');
   const { data: target, error: getErr } = await admin.auth.admin.getUserById(id);
   if (getErr || !target.user || target.user.email?.toLowerCase() !== email) return fail('Fant ikke brukeren', 404);
-  const confirmed = !!target.user.email_confirmed_at;
 
   switch (action) {
-    case 'resend': {
-      if (confirmed) return fail('Brukeren har allerede aktivert kontoen');
-      const { error } = await admin.auth.admin.inviteUserByEmail(email, { data: target.user.user_metadata });
+    case 'set_password': {
+      if (password.length < MIN_PW) return fail(`Passordet må ha minst ${MIN_PW} tegn`);
+      const { error } = await admin.auth.admin.updateUserById(id, { password });
       if (error) return fail(error.message);
-      await log('Sendte invitasjon på nytt til');
-      return json({ ok: true });
-    }
-    case 'revoke': {
-      if (confirmed) return fail('Brukeren har allerede aktivert kontoen');
-      const { error } = await admin.auth.admin.deleteUser(id);
-      if (error) return fail(error.message);
-      await admin.from('service_invites').delete().eq('email', email);
-      await log('Trakk tilbake invitasjon til');
+      await log('Satte nytt passord for');
       return json({ ok: true });
     }
     case 'deactivate':

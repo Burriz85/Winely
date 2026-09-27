@@ -53,14 +53,13 @@ async function move(u, cellar, nr, dir, qty, at) {
   await u.c.from('cellar_items').update({ drink_from: w[5], drink_to: w[6] }).eq('cellar_id', cellar).eq('product_id', pid[nr]);
 }
 
-const admin = await user('admin@vinskap.no', 'Admin', { admin: true });
-const ola = await user('ola@example.no', 'Ola Nordmann');
+const admin = await user('admin@vinskap.local', 'Admin', { admin: true });
+const ola = await user('ola@vinskap.local', 'Ola Nordmann');
 const kari = await user('kari@example.no', 'Kari Nordmann');
 const per = await user('per.hansen@example.no', 'Per Hansen');
 const sofie = await user('sofie@example.no', 'Sofie Lie');
 const lars = await user('lars.moe@example.no', 'Lars Moe');
-await user('ingrid@example.no', 'Ingrid Berg', { confirmed: false });
-await svc.from('service_invites').insert({ email: 'ingrid@example.no', name: 'Ingrid Berg', invited_by: admin.id });
+await user('ingrid@example.no', 'Ingrid Berg');
 
 await products(ola.c);
 ok(await ola.c.from('cellars').update({ name: 'Hjemme' }).eq('id', ola.cellar), 'navn');
@@ -117,4 +116,4 @@ health.push({ status: 429, latency_ms: 90, error: '429 Too Many Requests', sourc
 health.push({ status: 200, latency_ms: 640, source: 'sync', at: daysAgo(0, 3, 0) });
 ok(await svc.from('api_health').insert(health), 'api');
 
-console.log('Demodata lagt inn. Logg inn som admin@vinskap.no eller ola@example.no med passordet «' + PW + '».');
+console.log('Demodata lagt inn. Logg inn med brukernavnet «admin» eller «ola» og passordet «' + PW + '».');

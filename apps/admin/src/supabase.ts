@@ -15,9 +15,9 @@ export const vmp = createVmpClient({
   },
 });
 
-/** Kaller admin-invite og gir en norsk feilmelding tilbake (null = ok). */
+/** Kaller admin-users og gir en norsk feilmelding tilbake (null = ok). */
 export async function adminAction(body: Record<string, unknown>): Promise<string | null> {
-  const { data, error } = await supabase.functions.invoke('admin-invite', { body });
+  const { data, error } = await supabase.functions.invoke('admin-users', { body });
   if (!error) return data?.ok === false ? data.error : null;
   const ctx = (error as { context?: Response }).context;
   const j = await ctx?.json?.().catch(() => null);

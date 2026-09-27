@@ -43,9 +43,9 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 /** Norske feilmeldinger for det brukeren kan møte. */
 export function authError(msg: string | undefined) {
   const m = (msg || '').toLowerCase();
-  if (m.includes('invalid login')) return 'Feil e-post eller passord.';
+  if (m.includes('invalid login')) return 'Feil brukernavn eller passord.';
+  if (m.includes('different from the old')) return 'Det nye passordet må være forskjellig fra det gamle.';
   if (m.includes('banned')) return 'Kontoen er deaktivert. Kontakt administrator.';
-  if (m.includes('expired') || m.includes('invalid') && m.includes('otp') || m.includes('token')) return 'Koden er feil eller utløpt.';
   if (m.includes('password')) return 'Passordet må ha minst 8 tegn.';
   if (m.includes('network') || m.includes('fetch')) return 'Fikk ikke kontakt med serveren. Sjekk nettet.';
   return msg || 'Noe gikk galt.';

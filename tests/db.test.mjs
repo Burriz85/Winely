@@ -9,7 +9,6 @@ import { before, describe, it } from 'node:test';
 const URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const ANON = process.env.SUPABASE_ANON_KEY ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
-const MAILPIT = process.env.MAILPIT_URL ?? 'http://127.0.0.1:54324';
 
 const run = Date.now().toString(36);
 const mail = (n) => `${n}.${run}@test.no`;
@@ -25,28 +24,10 @@ async function signedIn(email, password = PW) {
   return c;
 }
 
-async function tokenFor(email, subjectPart) {
-  for (let i = 0; i < 40; i++) {
-    const r = await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent('to:' + email)}`).then((r) => r.json());
-    const msg = (r.messages ?? []).find((m) => !subjectPart || m.Subject.includes(subjectPart));
-    if (msg) {
-      const full = await fetch(`${MAILPIT}/api/v1/message/${msg.ID}`).then((r) => r.json());
-      const m = (full.Text || full.HTML).match(/\b(\d{6})\b/);
-      if (m) return m[1];
-    }
-    await new Promise((r) => setTimeout(r, 250));
-  }
-  throw new Error('fant ingen kode for ' + email);
-}
-
-async function activate(email, name) {
-  const c = anonClient();
-  const token = await tokenFor(email, 'invitert');
-  const { error } = await c.auth.verifyOtp({ email, token, type: 'invite' });
-  assert.ifError(error);
-  const upd = await c.auth.updateUser({ password: PW, data: { name } });
-  assert.ifError(upd.error);
-  return c;
+async function create(c, email, name, password = PW) {
+  const r = await invoke(c, 'admin-users', { action: 'create', email, name, password });
+  assert.equal(r.error, null, 'create ' + email + ': ' + r.error);
+  return signedIn(email, password);
 }
 
 const invoke = async (c, fn, body) => {
@@ -67,30 +48,25 @@ before(async () => {
   admin = await signedIn(mail('admin'));
 });
 
-describe('pålogging og invitasjon', () => {
+describe('pålogging og brukere', () => {
   it('åpen registrering er stengt', async () => {
     const { error } = await anonClient().auth.signUp({ email: mail('fremmed'), password: PW });
     assert.ok(error, 'signUp skulle feilet');
   });
 
-  it('admin inviterer, brukeren aktiverer med kode og kan logge inn', async () => {
-    for (const [n, name] of [['ola', 'Ola Nordmann'], ['kari', 'Kari Nordmann'], ['per', 'Per Hansen']]) {
-      const r = await invoke(admin, 'admin-invite', { email: mail(n), name });
-      assert.equal(r.error, null, 'invite ' + n + ': ' + r.error);
-    }
-    const { data: before } = await admin.rpc('admin_users');
-    assert.equal(before.find((u) => u.email === mail('ola')).status, 'invitert');
-
-    ola = await activate(mail('ola'), 'Ola Nordmann');
-    kari = await activate(mail('kari'), 'Kari Nordmann');
-    per = await activate(mail('per'), 'Per Hansen');
-    await signedIn(mail('ola'));
-
-    const { data: after } = await admin.rpc('admin_users');
-    const o = after.find((u) => u.email === mail('ola'));
+  it('admin oppretter brukere med passord; brukernavn uten @ virker', async () => {
+    ola = await create(admin, mail('ola'), 'Ola Nordmann');
+    kari = await create(admin, mail('kari'), 'Kari Nordmann');
+    per = await create(admin, `per${run}@vinskap.local`, 'Per Hansen');
+    const { data } = await admin.rpc('admin_users');
+    const o = data.find((u) => u.email === mail('ola'));
     assert.equal(o.status, 'aktiv');
     assert.equal(o.name, 'Ola Nordmann');
     assert.equal(o.cellar_ids.length, 1, 'handle_new_user lager eget skap');
+    const dup = await invoke(admin, 'admin-users', { action: 'create', email: mail('ola'), name: 'X', password: PW });
+    assert.match(dup.error, /finnes allerede/);
+    const short = await invoke(admin, 'admin-users', { action: 'create', email: mail('kort'), name: 'X', password: 'kort' });
+    assert.match(short.error, /minst 8/);
   });
 
   it('vanlig bruker kan ikke gjøre seg selv til admin eller aktivere seg selv', async () => {
@@ -105,33 +81,22 @@ describe('pålogging og invitasjon', () => {
     assert.equal(data, false);
   });
 
-  it('bare admin kan kalle admin-invite og admin_users', async () => {
-    const r = await invoke(ola, 'admin-invite', { email: mail('x'), name: 'X' });
+  it('bare admin kan kalle admin-users og admin_users', async () => {
+    const r = await invoke(ola, 'admin-users', { action: 'create', email: mail('x'), name: 'X', password: PW });
     assert.equal(r.status, 403);
     const { data } = await ola.rpc('admin_users');
     assert.deepEqual(data, []);
   });
 
-  it('send på nytt og trekk tilbake en ubesvart invitasjon', async () => {
-    const email = mail('ingrid');
-    assert.equal((await invoke(admin, 'admin-invite', { email, name: 'Ingrid Berg' })).error, null);
+  it('admin setter nytt passord, og brukeren kan bytte det selv', async () => {
     const { data: users } = await admin.rpc('admin_users');
-    const ingrid = users.find((u) => u.email === email);
-    const resend = await invoke(admin, 'admin-invite', { id: ingrid.id, email, action: 'resend' });
-    assert.equal(resend.error, null);
-    const revoke = await invoke(admin, 'admin-invite', { id: ingrid.id, email, action: 'revoke' });
-    assert.equal(revoke.error, null);
-    const { data: after } = await admin.rpc('admin_users');
-    assert.equal(after.find((u) => u.email === email), undefined);
-  });
-
-  it('nullstill passord sender en kode som virker', async () => {
-    assert.equal((await invoke(admin, 'admin-invite', { email: mail('per'), action: 'reset' })).error, null);
-    const token = await tokenFor(mail('per'), 'passord');
-    const c = anonClient();
-    assert.ifError((await c.auth.verifyOtp({ email: mail('per'), token, type: 'recovery' })).error);
-    assert.ifError((await c.auth.updateUser({ password: PW + '2' })).error);
-    per = await signedIn(mail('per'), PW + '2');
+    const p = users.find((u) => u.email === `per${run}@vinskap.local`);
+    assert.equal((await invoke(admin, 'admin-users', { id: p.id, email: p.email, action: 'set_password', password: PW + '2' })).error, null);
+    const old = await anonClient().auth.signInWithPassword({ email: p.email, password: PW });
+    assert.ok(old.error, 'gammelt passord skal ikke virke');
+    per = await signedIn(p.email, PW + '2');
+    assert.ifError((await per.auth.updateUser({ password: PW + '3' })).error);
+    per = await signedIn(p.email, PW + '3');
   });
 });
 
@@ -300,7 +265,7 @@ describe('admin', () => {
   it('deaktivert bruker kan ikke skrive og ikke logge inn; aktiver igjen virker', async () => {
     const { data: users } = await admin.rpc('admin_users');
     const k = users.find((u) => u.email === mail('kari'));
-    assert.equal((await invoke(admin, 'admin-invite', { id: k.id, email: mail('kari'), action: 'deactivate' })).error, null);
+    assert.equal((await invoke(admin, 'admin-users', { id: k.id, email: mail('kari'), action: 'deactivate' })).error, null);
     const w = await kari.rpc('register_movement', { p_cellar: olaCellar, p_product: productA, p_dir: 'in', p_qty: 1, p_client_id: 'kd-' + run });
     assert.ok(w.error, 'deaktivert bruker skal ikke kunne skrive');
     const s = await kari.rpc('suggest_ean', { p_ean: '7000000000017', p_product: productA });
@@ -310,7 +275,7 @@ describe('admin', () => {
     const { data: after } = await admin.rpc('admin_users');
     assert.equal(after.find((u) => u.email === mail('kari')).status, 'deaktivert');
 
-    assert.equal((await invoke(admin, 'admin-invite', { id: k.id, email: mail('kari'), action: 'reactivate' })).error, null);
+    assert.equal((await invoke(admin, 'admin-users', { id: k.id, email: mail('kari'), action: 'reactivate' })).error, null);
     kari = await signedIn(mail('kari'));
     const ok = await kari.rpc('register_movement', { p_cellar: olaCellar, p_product: productA, p_dir: 'in', p_qty: 1, p_client_id: 'kr-' + run });
     assert.ifError(ok.error);

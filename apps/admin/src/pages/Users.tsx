@@ -1,4 +1,4 @@
-import { relTime } from '@vinskap/shared';
+import { displayLogin, relTime } from '@vinskap/shared';
 import { useState } from 'react';
 import { useAdmin } from '../App';
 import { Chips, PageHead, SearchBox, StatusPill } from '../components/common';
@@ -16,10 +16,10 @@ export function Users() {
 
   return (
     <div className="page">
-      <PageHead label="Kun på invitasjon" title="Brukere" right={<button className="btn primary" onClick={openInvite}>+ Inviter bruker</button>} />
+      <PageHead label="Opprettes av admin" title="Brukere" right={<button className="btn primary" onClick={openInvite}>+ Ny bruker</button>} />
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ flex: 1, minWidth: 220 }}><SearchBox value={q} onChange={setQ} placeholder="Søk på navn eller e-post" /></div>
-        <Chips options={['Alle', 'Aktiv', 'Invitert', 'Deaktivert']} value={userFilter} onChange={setUserFilter} />
+        <div style={{ flex: 1, minWidth: 220 }}><SearchBox value={q} onChange={setQ} placeholder="Søk på navn eller brukernavn" /></div>
+        <Chips options={['Alle', 'Aktiv', 'Deaktivert']} value={userFilter} onChange={setUserFilter} />
       </div>
       <div className="rows">
         {rows.map((u) => (
@@ -27,7 +27,7 @@ export function Users() {
             style={{ display: 'grid', gridTemplateColumns: cols, gap: '6px 16px', alignItems: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
               <div className="syne" style={{ fontWeight: 600, fontSize: 16 }}>{u.name || '—'}{u.is_admin && <span className="muted" style={{ fontFamily: 'Figtree', fontWeight: 500, fontSize: 12 }}> · admin</span>}</div>
-              <div className="muted" style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.email}</div>
+              <div className="muted" style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayLogin(u.email)}</div>
             </div>
             {!narrow && <div className="muted" style={{ fontSize: 13 }}>Skap: {u.cellar_ids.map((c) => cellars.find((x) => x.id === c)?.name).filter(Boolean).join(', ') || '—'} · {u.bottles} fl.</div>}
             {!narrow && <div className="muted" style={{ fontSize: 13 }}>Sist aktiv: {relTime(u.last_active, 'admin')}</div>}

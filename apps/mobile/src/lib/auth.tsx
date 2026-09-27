@@ -9,8 +9,8 @@ type Auth = {
   session: Session | null;
   profile: Profile | null;
   signIn: (email: string, password: string) => Promise<string | null>;
-  /** «Aktiver konto»: e-post + kode fra invitasjonen (eller nytt passord-e-posten) + nytt passord. */
-  activate: (a: { email: string; code: string; password: string; name: string }) => Promise<string | null>;
+  /** Brukeren bytter passordet admin ga hen. */
+  changePassword: (password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
 };
 
@@ -43,17 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       return error ? authError(error.message) : null;
     },
-    async activate({ email, code, password, name }) {
-      let { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'invite' });
-      if (error) ({ error } = await supabase.auth.verifyOtp({ email, token: code, type: 'recovery' }));
-      if (error) return 'Koden er feil eller utløpt.';
-      const upd = await supabase.auth.updateUser({ password, ...(name ? { data: { name } } : {}) });
-      if (upd.error) return authError(upd.error.message);
-      if (name && upd.data.user) {
-        await supabase.from('profiles').update({ name }).eq('id', upd.data.user.id);
-        setProfile((p) => (p ? { ...p, name } : p));
-      }
-      return null;
+    async changePassword(password) {
+      const { error } = await supabase.auth.updateUser({ password });
+      return error ? authError(error.message) : null;
     },
     async signOut() {
       await supabase.auth.signOut();

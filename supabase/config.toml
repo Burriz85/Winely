@@ -244,13 +244,8 @@ otp_expiry = 3600
 # sender_name = "Admin"
 
 # Uncomment to customize email template
-[auth.email.template.invite]
-subject = "Du er invitert til Vinskap"
-content_path = "./supabase/templates/invite.html"
-
-[auth.email.template.recovery]
-subject = "Nytt passord til Vinskap"
-content_path = "./supabase/templates/recovery.html"
+# Ingen e-postmaler: admin oppretter brukere med passord, og det sendes ingen e-post.
+# [auth.email.template.invite]
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]

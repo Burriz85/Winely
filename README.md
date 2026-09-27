@@ -1,6 +1,6 @@
 # Vinskap
 
-Oversikt over vinene i private vinskap. Brukerne skanner strekkoden når de setter inn eller tar ut flasker, og produktdata slås opp hos Vinmonopolet. Operatøren styrer brukere, skap, strekkoder, duplikater og API-helse i en egen admin-webapp. Registrering skjer bare med invitasjon.
+Oversikt over vinene i private vinskap. Brukerne skanner strekkoden når de setter inn eller tar ut flasker, og produktdata slås opp hos Vinmonopolet. Operatøren styrer brukere, skap, strekkoder, duplikater og API-helse i en egen admin-webapp. Registrering er stengt. Admin oppretter brukerne med brukernavn og passord, og det sendes aldri e-post.
 
 Bygget etter handoff-pakken i [`docs/design/`](docs/design/README.md) (prototyper, mockdata, SQL og edge functions).
 
@@ -8,7 +8,7 @@ Bygget etter handoff-pakken i [`docs/design/`](docs/design/README.md) (prototype
 apps/mobile      Expo-app (iOS, Android og web) – Expo Router, TanStack Query, expo-camera
 apps/admin       Admin-webapp – Vite + React, responsiv (sidemeny ≥ 860 px)
 packages/shared  Designtokens, Vinmonopolet-klient, formatering (kr, drikkestatus, tid)
-supabase/        migrations/, functions/ (vmp, vmp-sync, admin-invite), e-postmaler, cron.sql
+supabase/        migrations/, functions/ (vmp, vmp-sync, admin-users), cron.sql
 tests/           Integrasjonstester mot lokal Supabase, mock av Vinmonopolet, demodata
 docs/design/     Handoff-pakken slik den ble levert
 ```
@@ -19,11 +19,11 @@ Krever Node 22 og Docker.
 
 ```bash
 npm install
-npx supabase start                  # Postgres, Auth, REST, edge runtime og Mailpit
+npx supabase start                  # Postgres, Auth, REST og edge runtime
 npm run mock:vmp                    # (egen terminal) falsk Vinmonopolet på :8787
 cp supabase/functions/.env.example supabase/functions/.env
 npx supabase functions serve --env-file supabase/functions/.env
-npm run seed                        # demodata; alle brukere har passordet «vinskap-demo»
+npm run seed                        # demodata; logg inn som «admin» eller «ola», passord «vinskap-demo»
 ```
 
 Mobilappen:
@@ -39,31 +39,28 @@ Admin:
 
 ```bash
 cp apps/admin/.env.example apps/admin/.env.local
-npm run admin                                     # http://127.0.0.1:5173, logg inn som admin@vinskap.no
+npm run admin                                     # http://127.0.0.1:5173, logg inn som «admin»
 ```
-
-E-poster (invitasjonskoder, nytt passord) havner i Mailpit på http://127.0.0.1:54324.
 
 ### Tester
 
 ```bash
 npm test            # enhetstester i packages/shared
 npm run typecheck   # alle pakker
-npm run test:db     # 18 integrasjonstester mot lokal Supabase (krever oppsettet over)
+npm run test:db     # 17 integrasjonstester mot lokal Supabase (krever oppsettet over)
 ```
 
-`test:db` dekker handoff-oppgave 8 og mer: åpen registrering er stengt, invitasjon → aktivering med kode, en bruker kan ikke gjøre seg selv til admin, bare egne skap er synlige, deling, atomisk og idempotent inn/ut, strekkodekonflikt, proxyen krever innlogging, vmp-sync, duplikater og sammenslåing, og at en deaktivert bruker verken kan skrive eller logge inn.
+`test:db` dekker handoff-oppgave 8 og mer: åpen registrering er stengt, admin oppretter brukere og setter passord, brukeren bytter passord selv, en bruker kan ikke gjøre seg selv til admin, bare egne skap er synlige, deling, atomisk og idempotent inn/ut, strekkodekonflikt, proxyen krever innlogging, vmp-sync, duplikater og sammenslåing, og at en deaktivert bruker verken kan skrive eller logge inn.
 
 ## Produksjon
 
 1. Opprett et Supabase-prosjekt og kjør `npx supabase link` og `npx supabase db push` (migreringene 0001–0003).
-2. Authentication → Providers → Email: på. Authentication → Settings → «Allow new users to sign up»: **av**. Slå av alle OAuth-leverandører.
-3. Lim inn malene fra `supabase/templates/` under Authentication → Email Templates (Invite og Reset password). De sender en 6-sifret kode i stedet for en lenke.
-4. `npx supabase secrets set VMP_KEY=<ny nøkkel>` – **lag en ny nøkkel**, for den gamle har vært delt i klartekst.
-5. `npx supabase functions deploy vmp vmp-sync admin-invite`
-6. Lag din egen bruker i dashboardet og kjør `update profiles set is_admin = true where id = (select id from auth.users where email = '…');`
-7. Kjør `supabase/cron.sql` i SQL-editoren (nattlig vmp-sync kl. 03).
-8. Admin: `npm run build -w @vinskap/admin` og legg `apps/admin/dist` på en statisk vert. Mobil: `eas build`, og for webappen `npm run export:web -w @vinskap/mobile` (statisk `dist/`).
+2. Authentication → Sign In / Providers: «Allow new users to sign up» **av**. Email-leverandøren **på** (ellers virker ingen innlogging), minste passordlengde 8. Alle OAuth-leverandører av. E-postmaler og SMTP trengs ikke.
+3. `npx supabase secrets set VMP_KEY=<ny nøkkel>` – **lag en ny nøkkel**, for den gamle har vært delt i klartekst.
+4. `npx supabase functions deploy vmp vmp-sync admin-users`
+5. Lag din egen bruker i dashboardet (Authentication → Users → Add user → Create new user, «Auto Confirm User» på; bruk f.eks. `admin@vinskap.local` for å logge inn som «admin») og kjør `update profiles set is_admin = true where id = (select id from auth.users where email = '…');`
+6. Kjør `supabase/cron.sql` i SQL-editoren (nattlig vmp-sync kl. 03).
+7. Admin: `npm run build -w @vinskap/admin` og legg `apps/admin/dist` på en statisk vert. Mobil: `eas build`, og for webappen `npm run export:web -w @vinskap/mobile` (statisk `dist/`).
 
 ## Avvik fra handoff-pakken, og hvorfor
 
@@ -77,15 +74,17 @@ Handoffen sier at farger, typografi, avstander og tekster skal være slik de st�
 
 **Pålogging**
 - `[auth.email] enable_signup = false` slår av hele e-postinnloggingen. Riktig bryter for «Allow new users to sign up» er `[auth] enable_signup`. Oppdaget i testene.
-- «Aktiver konto» har fått et kodefelt. `inviteUserByEmail` sender ellers en lenke, og en lenke inn i en mobilapp krever dyplenker per plattform. Med koden virker samme skjerm også for «Nullstill passord». Navnefeltet er valgfritt; tomt beholder navnet admin skrev inn.
+- **Ingen e-postinvitasjoner** (bestemt 27.09.2026). Admin oppretter brukeren med brukernavn og passord (`admin-users`, tidligere `admin-invite`). Prototypens «Aktiver konto», «Send invitasjon på nytt», «Trekk tilbake» og status «Invitert» er fjernet. «Nullstill passord» er erstattet av «Sett nytt passord» i admin, og brukeren kan bytte passord under Profil.
+- **Brukernavn:** Supabase Auth har bare e-post. Et brukernavn uten `@` lagres som `<navn>@vinskap.local`, og domenet skjules overalt i UI-et. Ekte e-postadresser virker også.
+- Admin kjenner passordet brukeren først får. Det vises bare én gang etter opprettelse.
 - Admin har egen innloggingsside og «Logg ut» nederst i menyen. Det finnes ikke i prototypen.
 
 **Data som skjermene trenger** (`0003_gaps.sql`)
-- `admin_users()`: `profiles` har ikke e-post, og `auth.users` er ikke lesbar fra klienten. «Invitert» = invitert, men ikke aktivert.
+- `admin_users()`: `profiles` har ikke e-post, og `auth.users` er ikke lesbar fra klienten. («Invitert» brukes ikke lenger, siden admin oppretter bekreftede brukere.)
 - `scan_events` og `ean_map.hits`: Skann per dag, skann per bruker og treff per strekkode hadde ingen kilde.
 - `ensure_product()`: Brukere kunne legge inn produkter, men ikke oppdatere dem, og ingen regel sa hvem som eier type, årgang og pris. Nå vinner den første registreringen, og navn og bilde kommer bare fra Vinmonopolet.
 - `suggest_ean()` og visningen `admin_eans`: Konfliktflyten i handoffen, med logging til `audit_log`.
-- `cellar_people()`, `invite_to_cellar()` og `remove_from_cellar()`: Eieren må se og invitere medlemmer på e-post. Finnes personen, blir hen medlem med én gang. Ellers venter invitasjonen til admin har invitert personen og kontoen er aktivert. «Del skapet» sender ikke e-post (bestemt 27.09.2026), så toasten sier «Invitasjon lagret» i stedet for prototypens «Invitasjon sendt».
+- `cellar_people()`, `invite_to_cellar()` og `remove_from_cellar()`: Eieren må se og invitere medlemmer på e-post. Finnes personen, blir hen medlem med én gang. Ellers venter tilgangen til admin har opprettet brukeren. Deles skapet med et brukernavn, gjøres det om på samme måte som ved innlogging. Det sendes ingen e-post, så toasten sier «Lagret» i stedet for prototypens «Invitasjon sendt».
 - `dupe_ignores`: «Ikke duplikat» må huskes, ellers dukker kortet opp igjen.
 - `api_health.source` skiller proxykall, nattlig synk og admin-test.
 - `admin_merge_products()` flytter nå også strekkodeforslag. Før ble de slettet via cascade.
@@ -96,7 +95,7 @@ Handoffen sier at farger, typografi, avstander og tekster skal være slik de st�
 - Arket «Vinmonopolet-API» lot brukeren lime inn nøkkelen. README-en sier at nøkkelen ikke skal ligge i klienten, så arket viser status for proxyen og har «Test nå». Pillen viser «tilkoblet» eller «frakoblet» (i stedet for «demo-data»).
 - «Hvilken vin er dette?» (ukjent strekkode) har ingen egen skjerm i prototypen. Den bruker søkeskjermen med en annen tittel, og søkefeltet fylles fra Open Food Facts når det finnes et treff.
 - Listevisningen (Rader, Kort, Drikkevindu) var bare en prop i prototypen. Den velges nå under Profil → Innstillinger → Visning. Samme sted kan man bytte skap når man er med i flere.
-- En invitert bruker får både eget tomt skap (`handle_new_user`) og det delte skapet. Appen viser det delte når det egne er tomt.
+- En bruker som er med i et delt skap, har også sitt eget tomme skap (`handle_new_user`) og det delte skapet. Appen viser det delte når det egne er tomt.
 - Resultatarket i prototypen viste flaskebildet to ganger (`sImgStyle` og `sw.swatch`). Det vises én gang.
 - Smak og «Passer til» skjules når de er tomme. API-et gir ingen slike data.
 - «HISTORIKK» i Syne 800 ved 44 px er om lag 389 px bred, mens innholdsbredden på en 390-skjerm er 350 px. Tittelen skaleres ned så den får plass.

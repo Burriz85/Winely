@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createVmpClient, defaultWindow, drinkStatus, guessYear, kr, normalize, relTime, toSearchTerm, vmpImage } from '../src';
+import { createVmpClient, defaultWindow, displayLogin, toLoginEmail, drinkStatus, guessYear, kr, normalize, relTime, toSearchTerm, vmpImage } from '../src';
 
 describe('format', () => {
   it('kr', () => {
@@ -29,6 +29,18 @@ describe('format', () => {
     expect(relTime(new Date(2026, 8, 22, 8, 0), 'admin', now)).toBe('22. sep');
     expect(relTime(new Date(2026, 8, 25, 21, 40), 'admin', now)).toBe('I går 21:40');
     expect(relTime(new Date(2025, 11, 1, 8, 0), 'admin', now)).toBe('1. des 2025');
+  });
+});
+
+describe('brukernavn', () => {
+  it('gjør brukernavn om til intern e-post og tilbake', () => {
+    expect(toLoginEmail(' Ola ')).toBe('ola@vinskap.local');
+    expect(toLoginEmail('kari@example.no')).toBe('kari@example.no');
+    expect(toLoginEmail('a')).toBeNull();
+    expect(toLoginEmail('ola nordmann')).toBeNull();
+    expect(toLoginEmail('x@y')).toBeNull();
+    expect(displayLogin('ola@vinskap.local')).toBe('ola');
+    expect(displayLogin('kari@example.no')).toBe('kari@example.no');
   });
 });
 

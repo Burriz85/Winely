@@ -1,9 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { relTime, shortDate } from '@vinskap/shared';
+import { displayLogin, relTime, shortDate } from '@vinskap/shared';
+import { useState } from 'react';
 import { useAdmin } from '../App';
 import { useActivity, useCellars, useMembers, useUsers } from '../data';
 import { adminAction } from '../supabase';
 import { StatusPill } from './common';
+import { makePassword } from './NewUserModal';
 
 export function UserDrawer({ id, onClose }: { id: string; onClose: () => void }) {
   const { narrow, flash, go, openCellar, me } = useAdmin();
@@ -11,14 +13,14 @@ export function UserDrawer({ id, onClose }: { id: string; onClose: () => void })
   const u = useUsers().data?.find((x) => x.id === id);
   const cellars = useCellars().data ?? [];
   const members = useMembers().data ?? [];
+  const [pw, setPw] = useState<string | null>(null);
   const acts = (useActivity().data ?? []).filter((a) => a.actor === id || (u && a.what.includes(u.email))).slice(0, 5);
   if (!u) return null;
 
-  const act = async (action: string, ok: string) => {
-    const err = await adminAction({ id: u.id, email: u.email, action });
+  const act = async (action: string, ok: string, extra: Record<string, unknown> = {}) => {
+    const err = await adminAction({ id: u.id, email: u.email, action, ...extra });
     flash(err ?? ok);
     ['users', 'activity'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
-    if (!err && action === 'revoke') onClose();
   };
 
   const mine = members.filter((m) => m.user_id === u.id);
@@ -35,7 +37,7 @@ export function UserDrawer({ id, onClose }: { id: string; onClose: () => void })
         <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div className="syne" style={{ fontWeight: 800, fontSize: 28, lineHeight: 1.05, letterSpacing: '-0.03em' }}>{u.name || '—'}</div>
-            <div className="muted" style={{ fontSize: 14 }}>{u.email}</div>
+            <div className="muted" style={{ fontSize: 14 }}>{displayLogin(u.email)}</div>
             <div><StatusPill s={u.status} /></div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', borderTop: '1px solid var(--sage-light)', borderBottom: '1px solid var(--sage-light)' }}>
@@ -72,21 +74,29 @@ export function UserDrawer({ id, onClose }: { id: string; onClose: () => void })
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div className="section">Handlinger</div>
-            {u.status === 'invitert' && (
+            {u.status !== 'deaktivert' && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button className="btn" onClick={() => act('resend', 'Invitasjon sendt på nytt til ' + u.email)}>Send invitasjon på nytt</button>
-                <button className="btn danger" onClick={() => act('revoke', 'Invitasjon trukket tilbake')}>Trekk tilbake</button>
+                <button className="btn" onClick={() => setPw(pw === null ? makePassword() : null)}>Sett nytt passord</button>
+                {!isMe && <button className="btn danger" onClick={() => act('deactivate', 'Deaktiverte ' + displayLogin(u.email))}>Deaktiver</button>}
               </div>
             )}
-            {u.status === 'aktiv' && (
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button className="btn" onClick={async () => { const err = await adminAction({ email: u.email, action: 'reset' }); flash(err ?? 'Kode for nytt passord sendt til ' + u.email); qc.invalidateQueries({ queryKey: ['activity'] }); }}>Nullstill passord</button>
-                {!isMe && <button className="btn danger" onClick={() => act('deactivate', 'Deaktiverte ' + u.email)}>Deaktiver</button>}
+            {pw !== null && (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input className="field" value={pw} onChange={(e) => setPw(e.target.value)} style={{ height: 40, fontSize: 14, fontFamily: 'ui-monospace,monospace' }} />
+                <button className="btn primary" onClick={async () => {
+                  if (pw.length < 8) return flash('Passordet må ha minst 8 tegn');
+                  const err = await adminAction({ id: u.id, email: u.email, action: 'set_password', password: pw });
+                  if (err) return flash(err);
+                  navigator.clipboard?.writeText(pw).catch(() => {});
+                  flash('Nytt passord satt og kopiert');
+                  setPw(null);
+                  qc.invalidateQueries({ queryKey: ['activity'] });
+                }}>Lagre</button>
               </div>
             )}
             {u.status === 'deaktivert' && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button className="btn primary" onClick={() => act('reactivate', 'Aktiverte ' + u.email)}>Aktiver igjen</button>
+                <button className="btn primary" onClick={() => act('reactivate', 'Aktiverte ' + displayLogin(u.email))}>Aktiver igjen</button>
               </div>
             )}
           </div>

@@ -13,14 +13,12 @@ export function Overview() {
   const api = useApiHealth().data;
   const nameOf = useNameOf();
 
-  const invited = users.filter((u) => u.status === 'invitert').length;
   const conflicts = new Set(eans.filter((e) => e.conflict).map((e) => e.ean)).size;
   const max = Math.max(1, ...days.map((d) => d.n));
   const first = days[0] ? new Date(days[0].day) : null;
   const todo = [
     conflicts ? { label: conflicts + ' strekkoder med konflikt', go: () => go('eans') } : null,
     dupes.length ? { label: dupes.length + ' mulige duplikater', go: () => go('dupes') } : null,
-    invited ? { label: invited + ' ubesvarte invitasjoner', go: () => go('users', { userFilter: 'Invitert' }) } : null,
   ].filter(Boolean) as { label: string; go: () => void }[];
 
   return (
@@ -30,7 +28,7 @@ export function Overview() {
         <div className="hero">Oversikt</div>
       </div>
       <div className="stats">
-        <div><div className="label-sm">Aktive brukere</div><div className="stat-val">{users.filter((u) => u.status === 'aktiv').length}</div><div style={{ fontSize: 12, color: 'var(--honey-text)', fontWeight: 500 }}>+{invited} invitert</div></div>
+        <div><div className="label-sm">Aktive brukere</div><div className="stat-val">{users.filter((u) => u.status === 'aktiv').length}</div></div>
         <div><div className="label-sm">Skap</div><div className="stat-val">{cellars.length}</div></div>
         <div><div className="label-sm">Flasker</div><div className="stat-val">{cellars.reduce((a, c) => a + Number(c.bottles), 0)}</div><div style={{ fontSize: 12 }} className="muted">{kr(cellars.reduce((a, c) => a + Number(c.value), 0))}</div></div>
         <div><div className="label-sm">Skann · 14 dager</div><div className="stat-val">{days.reduce((a, d) => a + Number(d.n), 0)}</div></div>

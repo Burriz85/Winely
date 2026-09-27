@@ -59,6 +59,21 @@ export function shortDate(input: string | Date | null | undefined) {
 
 export const isEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s.trim());
 
+// Supabase Auth har bare e-post. Et brukernavn (uten @) lagres som <navn>@vinskap.local.
+// Det sendes aldri e-post, så adressen trenger ikke å finnes.
+export const USERNAME_DOMAIN = 'vinskap.local';
+
+/** «Ola» → «ola@vinskap.local», «kari@example.no» → uendret. null hvis ugyldig. */
+export function toLoginEmail(input: string): string | null {
+  const s = input.trim().toLowerCase();
+  if (s.includes('@')) return isEmail(s) ? s : null;
+  return /^[a-z0-9æøå._-]{2,32}$/.test(s) ? s + '@' + USERNAME_DOMAIN : null;
+}
+
+/** Vis brukernavnet uten det interne domenet. */
+export const displayLogin = (email: string | null | undefined) =>
+  (email || '').replace('@' + USERNAME_DOMAIN, '');
+
 /** Fornavn med stor forbokstav for initial-knappen. */
 export const initial = (name: string | null | undefined, email?: string | null) =>
   ((name || '').trim().charAt(0) || (email || '?').charAt(0)).toUpperCase();

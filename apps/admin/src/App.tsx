@@ -1,8 +1,9 @@
 import type { Session } from '@supabase/supabase-js';
+import { displayLogin } from '@vinskap/shared';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { InviteModal } from './components/InviteModal';
+import { NewUserModal } from './components/NewUserModal';
 import { UserDrawer } from './components/UserDrawer';
-import { useDupes, useEans, useUsers } from './data';
+import { useDupes, useEans } from './data';
 import { Activity } from './pages/Activity';
 import { Api } from './pages/Api';
 import { Cellars } from './pages/Cellars';
@@ -80,7 +81,6 @@ function Shell({ me }: { me: Session['user'] }) {
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const narrow = useWidth() < 860;
 
-  const users = useUsers();
   const eans = useEans();
   const dupes = useDupes();
 
@@ -104,9 +104,8 @@ function Shell({ me }: { me: Session['user'] }) {
     if (opts?.userFilter) setUserFilter(opts.userFilter);
   }, []);
 
-  const invited = users.data?.filter((u) => u.status === 'invitert').length ?? 0;
   const conflicts = new Set(eans.data?.filter((e) => e.conflict).map((e) => e.ean)).size;
-  const badges: Partial<Record<Tab, number>> = { users: invited, eans: conflicts, dupes: dupes.data?.length ?? 0 };
+  const badges: Partial<Record<Tab, number>> = { eans: conflicts, dupes: dupes.data?.length ?? 0 };
 
   const ctx: Ctx = {
     tab, go, userFilter, setUserFilter, openUser: setSel, selCellar, openCellar: setSelCellar,
@@ -151,7 +150,7 @@ function Shell({ me }: { me: Session['user'] }) {
           </div>
           {!narrow && (
             <div style={{ marginTop: 'auto', padding: '0 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <div style={{ fontSize: 12, color: 'var(--coal-soft)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{me.email}</div>
+              <div style={{ fontSize: 12, color: 'var(--coal-soft)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayLogin(me.email)}</div>
               <button className="link-btn" style={{ textAlign: 'left', fontSize: 13, fontWeight: 600, color: 'var(--sage-dark)' }} onClick={() => supabase.auth.signOut()}>Logg ut</button>
             </div>
           )}
@@ -160,7 +159,7 @@ function Shell({ me }: { me: Session['user'] }) {
           {page[tab]}
         </main>
         {sel && <UserDrawer id={sel} onClose={() => setSel(null)} />}
-        {invite && <InviteModal onClose={() => setInvite(false)} />}
+        {invite && <NewUserModal onClose={() => setInvite(false)} />}
         {toast && (
           <div style={{ position: 'fixed', left: '50%', bottom: 24, transform: 'translateX(-50%)', padding: '14px 18px', borderRadius: 4, background: 'var(--coal)', color: 'var(--ivory)', fontSize: 14, fontWeight: 500, zIndex: 60, maxWidth: 'calc(100vw - 32px)' }}>{toast}</div>
         )}
