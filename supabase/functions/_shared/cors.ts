@@ -7,3 +7,13 @@ export const CORS = {
 
 export const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
+
+/** Rollen i en JWT som gatewayen allerede har verifisert (verify_jwt). null hvis ikke en JWT. */
+export function jwtRole(auth: string | null): string | null {
+  try {
+    const payload = (auth ?? '').replace(/^Bearer\s+/i, '').split('.')[1];
+    return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/'))).role ?? null;
+  } catch {
+    return null;
+  }
+}

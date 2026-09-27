@@ -4,16 +4,7 @@
 // Krever innlogget bruker (JWT), ellers kan hvem som helst bruke opp kvoten via proxyen.
 // Hvert kall logges i api_health.
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { CORS } from '../_shared/cors.ts';
-
-function jwtRole(auth: string | null): string | null {
-  try {
-    const payload = (auth ?? '').replace(/^Bearer\s+/i, '').split('.')[1];
-    return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/'))).role ?? null;
-  } catch {
-    return null;
-  }
-}
+import { CORS, jwtRole } from '../_shared/cors.ts';
 
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 

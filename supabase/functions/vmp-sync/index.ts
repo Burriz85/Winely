@@ -3,7 +3,7 @@
 //  • Innlogget bruker, body { vmp_nr }: ett produkt («Oppdater fra API» i appen).
 // Deploy: supabase functions deploy vmp-sync
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { CORS, json } from '../_shared/cors.ts';
+import { CORS, json, jwtRole } from '../_shared/cors.ts';
 
 const URL_ = Deno.env.get('SUPABASE_URL')!;
 const SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -64,7 +64,9 @@ Deno.serve(async (req) => {
       return json({ ok: true, found: true, name: rows[0].basic?.productShortName ?? null });
     }
 
-    if (auth !== 'Bearer ' + SERVICE) return new Response('Forbidden', { status: 403, headers: CORS });
+    // Gatewayen har verifisert signaturen. Sjekk rollen i stedet for å sammenligne med
+    // SUPABASE_SERVICE_ROLE_KEY, som på hostet Supabase kan være en annen nøkkeltype.
+    if (jwtRole(auth) !== 'service_role') return new Response('Forbidden: krever service_role', { status: 403, headers: CORS });
     const since = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
     let start = 0, updated = 0, seen = 0;
     for (;;) {
