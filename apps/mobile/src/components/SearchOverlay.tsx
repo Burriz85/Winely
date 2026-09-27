@@ -53,7 +53,7 @@ export function SearchOverlay() {
       if (data) wine = { ...productToWine(data), name: r.name };
     }
     setSearch(null);
-    setScan({ phase: 'res', wine: { ...wine, type: wine.type ?? 'Rødvin' }, isNew: !have, qty: 1, ean });
+    setScan({ phase: 'res', wine, isNew: !have, qty: 1, ean });
   };
 
   return (

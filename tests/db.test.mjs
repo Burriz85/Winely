@@ -128,6 +128,20 @@ describe('skap, produkter og inn/ut', () => {
     assert.deepEqual(p, { name: 'Brezza Barolo Cannubi 2017', type: 'Rødvin', vintage: 2017, price: 689 });
   });
 
+  it('«Endre»: medlem retter type/årgang/pris/drikkevindu, andre kan ikke', async () => {
+    const r = await ola.rpc('update_wine', { p_cellar: olaCellar, p_product: productA, p_type: 'Hvitvin', p_vintage: 2018, p_price: 700, p_from: 2025, p_to: 2030 });
+    assert.ifError(r.error);
+    const { data: p } = await ola.from('products').select('type,vintage,price').eq('id', productA).single();
+    assert.deepEqual(p, { type: 'Hvitvin', vintage: 2018, price: 700 });
+    const { data: i } = await ola.from('cellar_items').select('drink_from,drink_to').eq('cellar_id', olaCellar).eq('product_id', productA).single();
+    assert.deepEqual(i, { drink_from: 2025, drink_to: 2030 });
+    const bad = await ola.rpc('update_wine', { p_cellar: olaCellar, p_product: productA, p_type: 'Øl', p_vintage: null, p_price: null, p_from: null, p_to: null });
+    assert.ok(bad.error);
+    const other = await per.rpc('update_wine', { p_cellar: olaCellar, p_product: productA, p_type: 'Rødvin', p_vintage: 2017, p_price: 689, p_from: 2024, p_to: 2035 });
+    assert.ok(other.error, 'ikke-medlem skal ikke kunne endre');
+    assert.ifError((await ola.rpc('update_wine', { p_cellar: olaCellar, p_product: productA, p_type: 'Rødvin', p_vintage: 2017, p_price: 689, p_from: null, p_to: null })).error);
+  });
+
   it('andre ser ikke skapet før det er delt', async () => {
     const { data } = await per.from('cellar_items').select('id').eq('cellar_id', olaCellar);
     assert.deepEqual(data, []);

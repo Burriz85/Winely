@@ -12,7 +12,7 @@ import { supabase } from '../lib/supabase';
 import { figtree, syne, t } from '../lib/theme';
 import { useUI, type Scan } from '../lib/ui';
 import { sub } from '../lib/wine';
-import { Btn, Chip, Field, Handle, LinkBtn, WineThumb } from './ui';
+import { Btn, Chip, Handle, LinkBtn, NumField, WineThumb } from './ui';
 
 /** UPC-A (12 siffer) rapporteres som EAN-13 med innledende 0 på iOS. Samme nøkkel på alle enheter. */
 const normalizeEan = (s: string) => {
@@ -75,7 +75,7 @@ export function ScanOverlay() {
     if (p) {
       const have = wines.find((w) => w.nr === p.vmp_nr);
       const wine = have ?? productToWine(p);
-      setScan({ phase: 'res', wine: { ...wine, type: wine.type ?? 'Rødvin' }, isNew: !have, qty: 1, scanned: ean });
+      setScan({ phase: 'res', wine, isNew: !have, qty: 1, scanned: ean });
     } else {
       // Ukjent strekkode → «Hvilken vin er dette?»
       setScan(null);
@@ -127,21 +127,6 @@ export function ScanOverlay() {
       </View>
       {scan.phase === 'res' && <ResultSheet scan={scan} />}
     </View>
-  );
-}
-
-function NumField({ value, onChange, placeholder, width = 96 }: { value: number | null; onChange: (n: number | null) => void; placeholder: string; width?: number }) {
-  const [text, setText] = useState(value ? String(value) : '');
-  useEffect(() => { setText(value ? String(value) : ''); }, [value]);
-  return (
-    <Field
-      value={text}
-      onChangeText={(s) => { setText(s); const n = parseInt(s.replace(/\D/g, ''), 10); onChange(Number.isFinite(n) ? n : null); }}
-      keyboardType="number-pad"
-      inputMode="numeric"
-      placeholder={placeholder}
-      style={{ width, paddingHorizontal: 12, textAlign: 'right' }}
-    />
   );
 }
 
@@ -198,6 +183,7 @@ function ResultSheet({ scan }: { scan: Extract<Scan, { phase: 'res' }> }) {
         </View>
         {scan.isNew && (
           <View style={{ gap: 10 }}>
+            {!w.type && <Text style={{ ...figtree(500), fontSize: 13, color: C.honeyText }}>Velg type</Text>}
             <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
               {WINE_TYPES.map((ty) => <Chip key={ty} label={ty} pad={12} active={w.type === ty} onPress={() => patch({ type: ty })} />)}
             </View>

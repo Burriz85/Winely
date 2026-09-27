@@ -1,6 +1,6 @@
 import { C, typeColor, type Wine } from '@vinskap/shared';
 import { Image } from 'expo-image';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, Text, TextInput, View, type StyleProp, type TextInputProps, type TextStyle, type ViewStyle } from 'react-native';
 import { em, figtree, syne, t } from '../lib/theme';
 
@@ -126,3 +126,18 @@ export const Qty = ({ n }: { n: number }) => (
     <Text style={{ ...figtree(400), fontSize: 10, letterSpacing: em(10, 0.18), textTransform: 'uppercase', color: C.coalSoft }}>fl.</Text>
   </View>
 );
+
+export function NumField({ value, onChange, placeholder, width = 96 }: { value: number | null; onChange: (n: number | null) => void; placeholder: string; width?: number }) {
+  const [text, setText] = useState(value ? String(value) : '');
+  useEffect(() => { setText(value ? String(value) : ''); }, [value]);
+  return (
+    <Field
+      value={text}
+      onChangeText={(s) => { setText(s); const n = parseInt(s.replace(/\D/g, ''), 10); onChange(Number.isFinite(n) ? n : null); }}
+      keyboardType="number-pad"
+      inputMode="numeric"
+      placeholder={placeholder}
+      style={{ width, paddingHorizontal: 12, textAlign: 'right' }}
+    />
+  );
+}

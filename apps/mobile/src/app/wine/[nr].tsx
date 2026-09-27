@@ -3,8 +3,10 @@ import { C, drinkStatus, kr, typeColor, vmpImage, vmpProductUrl } from '@vinskap
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
+import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { EditWineSheet } from '../../components/EditWineSheet';
 import { Btn, HeroBottle, Row } from '../../components/ui';
 import { useCellar, useWines } from '../../lib/data';
 import { supabase } from '../../lib/supabase';
@@ -20,6 +22,7 @@ export default function WineScreen() {
   const { cellar } = useCellar();
   const { wines, isLoading } = useWines(cellar?.id);
   const { setScan, flash } = useUI();
+  const [editing, setEditing] = useState(false);
   const w = wines.find((x) => x.nr === nr);
   const back = () => router.navigate('/');
 
@@ -44,6 +47,7 @@ export default function WineScreen() {
   };
 
   return (
+    <>
     <ScrollView style={{ flex: 1 }}>
       <View style={{ height: 96 + insets.top, paddingTop: insets.top + 12, paddingHorizontal: 12, paddingBottom: 12, backgroundColor: typeColor(w.type) }}>
         <Pressable onPress={back}
@@ -95,7 +99,10 @@ export default function WineScreen() {
           <Row k="Alkohol" v={w.abv} />
           <Row k="Verdi i skapet" v={kr(w.price * w.qty)} last />
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, gap: 12 }}>
-            <Btn label="Oppdater fra API" kind="sage" size={13} pad={14} onPress={refresh} />
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Btn label="Endre" kind="sage" size={13} pad={14} onPress={() => setEditing(true)} />
+              <Btn label="Oppdater fra API" kind="sage" size={13} pad={14} onPress={refresh} />
+            </View>
             <Pressable onPress={() => Linking.openURL(vmpProductUrl(w.nr))}>
               <Text style={{ ...figtree(600), fontSize: 14, color: C.sageDark }}>vinmonopolet.no →</Text>
             </Pressable>
@@ -103,5 +110,7 @@ export default function WineScreen() {
         </View>
       </View>
     </ScrollView>
+    {editing && cellar && <EditWineSheet wine={w} cellarId={cellar.id} onClose={() => setEditing(false)} />}
+    </>
   );
 }
