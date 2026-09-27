@@ -60,7 +60,7 @@ create view public.admin_duplicates with (security_invoker = true) as
   select a.id as keep_id, a.name as keep_name, b.id as merge_id, b.name as merge_name
     from products a join products b on a.id <> b.id
    where a.vmp_nr is not null and b.vmp_nr is null
-     and similarity(lower(a.name), lower(b.name)) > 0.6;   -- krever: create extension pg_trgm;
+     and extensions.similarity(lower(a.name), lower(b.name)) > 0.6;   -- krever: create extension pg_trgm;
 
 -- Slå sammen produkt b inn i a
 create function public.admin_merge_products(p_keep uuid, p_merge uuid) returns void

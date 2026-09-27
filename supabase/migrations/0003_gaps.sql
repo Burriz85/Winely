@@ -236,7 +236,7 @@ create view public.admin_duplicates with (security_invoker = true) as
               then 'Likt navn og produsent' else 'Likt navn · én uten varenummer' end as reason
     from products a join products b on a.id <> b.id
    where a.vmp_nr is not null and b.vmp_nr is null
-     and similarity(lower(a.name), lower(b.name)) > 0.6
+     and extensions.similarity(lower(a.name), lower(b.name)) > 0.6
      and not exists (select 1 from dupe_ignores i where i.keep_id = a.id and i.merge_id = b.id);
 
 -- Samme som i 0002, men strekkodeforslag flyttes også (de ble slettet via cascade).
