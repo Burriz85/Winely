@@ -3,7 +3,7 @@ import { C, defaultWindow, WINE_TYPES, type Wine } from '@vinskap/shared';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { X } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { productToWine, useCellar, useWines } from '../lib/data';
@@ -13,6 +13,7 @@ import { figtree, syne, t } from '../lib/theme';
 import { useUI, type Scan } from '../lib/ui';
 import { sub } from '../lib/wine';
 import { Btn, Chip, Handle, LinkBtn, NumField, WineThumb } from './ui';
+import { WebScanner } from './WebScanner';
 
 // Nettlesere uten innebygd BarcodeDetector (Safari på iPhone) bruker en WASM-dekoder.
 // Som standard hentes den fra jsDelivr; da feiler skanningen stille hvis CDN-et ikke svarer.
@@ -63,9 +64,12 @@ export function ScanOverlay() {
   const lock = useRef(false);
 
   const camActive = scan?.phase === 'cam' || scan?.phase === 'lookup';
+  const web = Platform.OS === 'web';
+  const onWebError = useCallback((m: string) => setCamError(m), []);
   useEffect(() => {
-    if (camActive && perm && !perm.granted && perm.canAskAgain) requestPerm();
-  }, [camActive, perm, requestPerm]);
+    // På web spør WebScanner selv om kameratilgang.
+    if (!web && camActive && perm && !perm.granted && perm.canAskAgain) requestPerm();
+  }, [web, camActive, perm, requestPerm]);
   useEffect(() => {
     if (scan?.phase === 'cam') lock.current = false;
     if (!scan) { setManual(null); setCamError(null); }
@@ -104,7 +108,10 @@ export function ScanOverlay() {
   return (
     <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 20, backgroundColor: C.scanBg }}>
       <View style={{ flex: 1, overflow: 'hidden', backgroundColor: C.coal }} onLayout={(e) => setAreaH(e.nativeEvent.layout.height)}>
-        {camActive && perm?.granted && (
+        {web && camActive && (
+          <WebScanner active={scan.phase === 'cam' && manual === null} onCode={lookup} onError={onWebError} />
+        )}
+        {!web && camActive && perm?.granted && (
           <CameraView
             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
             facing="back"
@@ -120,16 +127,17 @@ export function ScanOverlay() {
         </Pressable>
         {areaH > 0 && (
           <>
-            <View style={{ position: 'absolute', left: '50%', marginLeft: -130, top: frameTop, width: 260, height: 160, borderWidth: 2, borderColor: C.sageLight, borderRadius: 8 }}>
+            <View pointerEvents="none" style={{ position: 'absolute', left: '50%', marginLeft: -130, top: frameTop, width: 260, height: 160, borderWidth: 2, borderColor: C.sageLight, borderRadius: 8 }}>
               {scan.phase === 'cam' && <ScanLine height={156} />}
             </View>
             <View style={{ position: 'absolute', left: 0, right: 0, top: areaH * 0.44 + 104, alignItems: 'center', gap: 18, paddingHorizontal: 20 }}>
               <Text style={{ ...figtree(400), fontSize: 14, color: C.ivory, textAlign: 'center' }}>
                 {scan.phase === 'lookup' ? 'Slår opp strekkoden …'
-                  : camActive && perm && !perm.granted ? 'Vinskap trenger tilgang til kameraet for å skanne.'
+                  : !web && camActive && perm && !perm.granted ? 'Vinskap trenger tilgang til kameraet for å skanne.'
+                  : web ? 'Hold strekkoden innenfor rammen, 15–25 cm unna. Trykk på bildet for å fokusere.'
                   : 'Hold strekkoden innenfor rammen'}
               </Text>
-              {camActive && perm && !perm.granted && (
+              {!web && camActive && perm && !perm.granted && (
                 <Pressable onPress={() => requestPerm()} style={{ height: 44, paddingHorizontal: 18, borderRadius: 22, borderWidth: 1, borderColor: C.sageLight, justifyContent: 'center' }}>
                   <Text style={{ ...figtree(500), fontSize: 14, color: C.ivory }}>Gi tilgang til kameraet</Text>
                 </Pressable>
