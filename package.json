@@ -12,7 +12,9 @@
     "test": "npm run test --workspaces --if-present",
     "test:db": "node --test --test-concurrency=1 tests/db.test.mjs",
     "seed": "node tests/seed-demo.mjs",
-    "mock:vmp": "node tests/mock-vmp.mjs"
+    "mock:vmp": "node tests/mock-vmp.mjs",
+    "build:admin": "npm run build -w @vinskap/admin",
+    "build:web": "npm run export:web -w @vinskap/mobile"
   },
   "devDependencies": {
     "typescript": "~6.0.3"

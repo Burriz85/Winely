@@ -60,7 +60,10 @@ npm run test:db     # 17 integrasjonstester mot lokal Supabase (krever oppsettet
 4. `npx supabase functions deploy vmp vmp-sync admin-users`
 5. Lag din egen bruker i dashboardet (Authentication → Users → Add user → Create new user, «Auto Confirm User» på; bruk f.eks. `admin@vinskap.local` for å logge inn som «admin») og kjør `update profiles set is_admin = true where id = (select id from auth.users where email = '…');`
 6. Kjør `supabase/cron.sql` i SQL-editoren (nattlig vmp-sync kl. 03).
-7. Admin: `npm run build -w @vinskap/admin` og legg `apps/admin/dist` på en statisk vert. Mobil: `eas build`, og for webappen `npm run export:web -w @vinskap/mobile` (statisk `dist/`).
+7. Netlify, to nettsteder fra samme repo (Base directory tomt, Node 22 fra `.nvmrc`):
+   - Admin: build `npm run build:admin`, publish `apps/admin/dist`, miljøvariabler `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_VMP_QUOTA`.
+   - Webappen: build `npm run build:web`, publish `apps/mobile/dist`, miljøvariabler `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+   - `_redirects` i begge sender alle stier til `index.html`. Native app: `eas build`.
 
 ## Avvik fra handoff-pakken, og hvorfor
 
