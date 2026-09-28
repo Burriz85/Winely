@@ -1,6 +1,7 @@
-import { C, defaultWindow, type Wine, type WineType } from '@vinskap/shared';
+import { C, defaultWindow, guessYear, type Wine, type WineType } from '@vinskap/shared';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
+import { uploadWineImage } from '../lib/images';
 import { canReadLabel, pickLabelPhoto, readLabel } from '../lib/label';
 import { uuid } from '../lib/queue';
 import { figtree, syne } from '../lib/theme';
@@ -22,18 +23,21 @@ export function ManualWineSheet() {
   const [region, setRegion] = useState('');
   const [fromLabel, setFromLabel] = useState<{ type: WineType | null; vintage: number | null; grapes: string[] } | null>(null);
   const [reading, setReading] = useState(false);
+  const [photoData, setPhotoData] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [vmpHits, setVmpHits] = useState<{ query: string; n: number } | null>(null);
   const [started, setStarted] = useState<typeof manual>(null);
   if (!manual) return null;
   if (started !== manual) {
     setStarted(manual);
     setName(manual.name ?? ''); setProducer(''); setCountry(''); setRegion('');
-    setFromLabel(null); setVmpHits(null); setReading(false);
+    setFromLabel(null); setVmpHits(null); setReading(false); setPhotoData(null); setSaving(false);
   }
 
   const photo = async () => {
     const image = await pickLabelPhoto();
     if (!image) return;
+    setPhotoData(image); // brukes også som bilde av vinen
     setReading(true); setVmpHits(null);
     try {
       const l = await readLabel(image);
@@ -53,14 +57,22 @@ export function ManualWineSheet() {
     }
   };
 
-  const next = () => {
+  const next = async () => {
     if (!name.trim()) return flash('Skriv inn navnet på vinen');
-    const year = fromLabel?.vintage ?? null;
+    const productId = uuid();
+    let img = '';
+    if (photoData) {
+      setSaving(true);
+      // Uten nett eller ved feil lagres vinen uten bilde; det kan legges til senere på vinsiden.
+      img = await uploadWineImage(productId, photoData).catch(() => '');
+      setSaving(false);
+    }
+    const year = fromLabel?.vintage ?? guessYear(name);
     const w = defaultWindow(year);
     const wine: Wine = {
-      productId: uuid(), nr: '', name: name.trim(), producer: producer.trim(), year, type: fromLabel?.type ?? null,
+      productId, nr: '', name: name.trim(), producer: producer.trim(), year, type: fromLabel?.type ?? null,
       country: country.trim(), region: region.trim(), grape: (fromLabel?.grapes ?? []).join(', '), abv: '', price: 0,
-      taste: '', food: '', qty: 0, from: w.from, to: w.to, img: '',
+      taste: '', food: '', qty: 0, from: w.from, to: w.to, img,
     };
     setManual(null);
     setScan({ phase: 'res', wine, isNew: true, qty: 1, ean: manual.ean });
@@ -92,7 +104,8 @@ export function ManualWineSheet() {
           Fra etiketten: {[fromLabel.type, fromLabel.vintage, fromLabel.grapes.join(', ')].filter(Boolean).join(' · ') || '—'}. Sjekk at det stemmer i neste steg.
         </Text>
       )}
-      <Btn label="Neste" height={52} size={15} onPress={next} style={{ marginTop: 4 }} />
+      {photoData && <Text style={{ ...figtree(400), fontSize: 12, color: C.coalSoft }}>Bildet av etiketten lagres som bilde av vinen.</Text>}
+      <Btn label={saving ? 'Laster opp bildet …' : 'Neste'} height={52} size={15} onPress={saving ? undefined : next} style={{ marginTop: 4 }} />
     </Sheet>
   );
 }

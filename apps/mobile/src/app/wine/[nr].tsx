@@ -7,6 +7,8 @@ import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EditWineSheet } from '../../components/EditWineSheet';
+import { setWineImage, uploadWineImage } from '../../lib/images';
+import { canReadLabel, pickLabelPhoto } from '../../lib/label';
 import { Btn, HeroBottle, Row } from '../../components/ui';
 import { useCellar, useWines } from '../../lib/data';
 import { supabase } from '../../lib/supabase';
@@ -39,6 +41,20 @@ export default function WineScreen() {
   }
 
   const st = drinkStatus(w.from, w.to);
+  const addPhoto = async () => {
+    if (!cellar || !w.productId) return;
+    const image = await pickLabelPhoto();
+    if (!image) return;
+    try {
+      flash('Laster opp bildet …');
+      const url = await uploadWineImage(w.productId, image);
+      await setWineImage(cellar.id, w.productId, url);
+      await qc.invalidateQueries({ queryKey: ['wines', cellar.id] });
+      flash('Bildet er lagret');
+    } catch (e) {
+      flash((e as Error).message);
+    }
+  };
   const refresh = async () => {
     const { data, error } = await supabase.functions.invoke('vmp-sync', { body: { vmp_nr: w.nr } });
     if (error || !data?.ok) return flash(data?.found === false ? 'Fant ikke varenr. ' + w.nr : 'Kunne ikke oppdatere fra Vinmonopolet');
@@ -102,6 +118,7 @@ export default function WineScreen() {
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Btn label="Endre" kind="sage" size={13} pad={14} onPress={() => setEditing(true)} />
               {!!w.nr && <Btn label="Oppdater fra API" kind="sage" size={13} pad={14} onPress={refresh} />}
+              {!w.nr && canReadLabel && <Btn label={w.img ? 'Bytt bilde' : 'Legg til bilde'} kind="sage" size={13} pad={14} onPress={addPhoto} />}
             </View>
             {!!w.nr && (
               <Pressable onPress={() => Linking.openURL(vmpProductUrl(w.nr))}>

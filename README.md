@@ -120,6 +120,8 @@ Service workeren lagrer siden og byggefilene, så appen åpner også uten nett. 
 
 ## Kjente begrensninger
 
+- **Bilder av manuelle viner** ligger i Supabase Storage (bøtta `wine-images`, `0009`). Bøtta er offentlig lesbar: den som har lenken, ser bildet. Adressene er tilfeldige. Etikettbildet brukes automatisk; ellers «Legg til bilde» på vinsiden (webappen).
+
 - **Etikettlesing** (manuell vin → «Ta bilde av etiketten») bruker Claude via edge-funksjonen `label` og krever `supabase secrets set ANTHROPIC_API_KEY=...`. Hvert bilde koster noen få øre og faktureres på Anthropic-kontoen. Bildet lagres ikke. Bare i webappen (native trenger `expo-image-picker`). Selve avlesningen er ikke testet i utviklingsmiljøet, som mangler nøkkel.
 
 - Type, årgang, pris, distrikt, druer, alkohol, smak og mat hentes fra vinmonopolet.no sitt eget nettsted (`vmpws/v3`), som **ikke** er et offisielt API. Det kan endres eller stenges uten varsel; da virker appen som før, og feltene fylles inn for hånd med «Endre».

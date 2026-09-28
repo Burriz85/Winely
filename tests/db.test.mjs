@@ -200,6 +200,26 @@ describe('viner som ikke finnes hos Vinmonopolet', () => {
     assert.deepEqual(data.grapes, ['Chenin Blanc']);
   });
 
+  it('bilde: opplasting til wine-images og set_wine_image', async () => {
+    const id = crypto.randomUUID();
+    await ola.rpc('create_manual_product', { p_id: id, p_name: 'Bildevin', p_type: 'Rødvin' });
+    await ola.rpc('register_movement', { p_cellar: olaCellar, p_product: id, p_dir: 'in', p_qty: 1, p_client_id: 'img-' + run });
+    const path = `manual/${id}-${Date.now()}.jpg`;
+    const jpeg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 0x4a, 0x46, 0x49, 0x46, 0, 1, 0xff, 0xd9]);
+    const up = await ola.storage.from('wine-images').upload(path, jpeg, { contentType: 'image/jpeg' });
+    assert.ifError(up.error);
+    const url = ola.storage.from('wine-images').getPublicUrl(path).data.publicUrl;
+    assert.equal((await fetch(url)).status, 200, 'offentlig lesbar');
+    assert.ifError((await ola.rpc('set_wine_image', { p_cellar: olaCellar, p_product: id, p_url: url })).error);
+    const { data } = await ola.from('products').select('image_url').eq('id', id).single();
+    assert.equal(data.image_url, url);
+    assert.ok((await ola.rpc('set_wine_image', { p_cellar: olaCellar, p_product: id, p_url: 'https://evil.example/x.jpg' })).error, 'bare egne bildeadresser');
+    assert.ok((await per.rpc('set_wine_image', { p_cellar: olaCellar, p_product: id, p_url: url })).error, 'bare medlemmer');
+    const outside = await ola.storage.from('wine-images').upload(`annet/${id}.jpg`, jpeg, { contentType: 'image/jpeg' });
+    assert.ok(outside.error, 'bare under manual/');
+    await ola.rpc('register_movement', { p_cellar: olaCellar, p_product: id, p_dir: 'out', p_qty: 1, p_client_id: 'img2-' + run });
+  });
+
   it('etikettlesing krever innlogging, og sier fra når den ikke er satt opp', async () => {
     const anon = await fetch(`${URL}/functions/v1/label`, { method: 'POST', headers: { apikey: ANON, Authorization: 'Bearer ' + ANON }, body: '{}' });
     assert.equal(anon.status, 403);
@@ -351,7 +371,7 @@ describe('admin', () => {
     assert.equal(cellars.members, 3); // ola, kari og lise
     assert.equal(Number(cellars.value), 4 * 689);
     const { data: mv } = await admin.from('movements').select('id').eq('cellar_id', olaCellar);
-    assert.equal(mv.length, 7); // inkl. lises ut + inn og den manuelle vinen inn + ut
+    assert.equal(mv.length, 9); // inkl. lises ut + inn, den manuelle vinen og bildevinen inn + ut
     const { data: days } = await admin.rpc('admin_scans_per_day', { p_days: 14 });
     assert.equal(days.length, 14);
     assert.ok(days.at(-1).n >= 2);

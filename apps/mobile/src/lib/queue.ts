@@ -111,6 +111,10 @@ async function run(op: Op) {
     p_cellar: op.cellar_id, p_product: pid, p_dir: op.dir, p_qty: op.qty, p_client_id: op.client_id,
   });
   if (error) fail(error);
+  if (op.isNew && !w.nr && w.img) {
+    // Etikettbildet er lastet opp allerede; knytt det til den nye vinen. Feil her stopper ikke registreringen.
+    await supabase.rpc('set_wine_image', { p_cellar: op.cellar_id, p_product: pid, p_url: w.img });
+  }
   if (op.isNew && op.dir === 'in') {
     const { error: e2 } = await supabase.from('cellar_items')
       .update({ drink_from: w.from, drink_to: w.to })
