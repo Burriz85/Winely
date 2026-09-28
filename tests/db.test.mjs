@@ -192,6 +192,22 @@ describe('viner som ikke finnes hos Vinmonopolet', () => {
     assert.ok(vmpEdit.error, 'Vinmonopolet-viner kan ikke gis nytt navn');
     await ola.rpc('register_movement', { p_cellar: olaCellar, p_product: id, p_dir: 'out', p_qty: 2, p_client_id: 'm2-' + run });
   });
+
+  it('druer lagres for manuelle viner', async () => {
+    const id = crypto.randomUUID();
+    await ola.rpc('create_manual_product', { p_id: id, p_name: 'Etikettvin', p_type: 'Hvitvin', p_grapes: ['Chenin Blanc'] });
+    const { data } = await ola.from('products').select('grapes').eq('id', id).single();
+    assert.deepEqual(data.grapes, ['Chenin Blanc']);
+  });
+
+  it('etikettlesing krever innlogging, og sier fra når den ikke er satt opp', async () => {
+    const anon = await fetch(`${URL}/functions/v1/label`, { method: 'POST', headers: { apikey: ANON, Authorization: 'Bearer ' + ANON }, body: '{}' });
+    assert.equal(anon.status, 403);
+    const r = await invoke(ola, 'label', { image: 'aGVp' });
+    // Lokalt finnes ingen ANTHROPIC_API_KEY
+    assert.equal(r.status, 503);
+    assert.match(r.error, /ANTHROPIC_API_KEY/);
+  });
 });
 
 describe('admin knytter brukere til skap', () => {

@@ -28,21 +28,23 @@ export function SearchOverlay() {
     setQ(search.prefill ?? ''); setResults([]); setDone(false); setError(null);
     // Valgfritt (handoff): Open Food Facts fyller ut søkefeltet for ukjente strekkoder.
     if (search.ean && !search.prefill) offName(search.ean).then((n) => n && setQ((cur) => cur || n));
+    if (search.autorun && search.prefill) runQuery(search.prefill);
   }, [search]);
 
   if (!search) return null;
 
-  const run = async () => {
-    if (!q.trim()) return;
+  const run = () => runQuery(q);
+  async function runQuery(query: string) {
+    if (!query.trim()) return;
     setLoading(true); setError(null);
     try {
-      setResults(await vmp.search(q));
+      setResults(await vmp.search(query));
     } catch (e) {
       setError((e as Error).message);
       setResults([]);
     }
     setLoading(false); setDone(true);
-  };
+  }
 
   const pick = async (r: Wine) => {
     const have = wines.find((w) => w.nr === r.nr);

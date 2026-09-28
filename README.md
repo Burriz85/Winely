@@ -120,6 +120,8 @@ Service workeren lagrer siden og byggefilene, så appen åpner også uten nett. 
 
 ## Kjente begrensninger
 
+- **Etikettlesing** (manuell vin → «Ta bilde av etiketten») bruker Claude via edge-funksjonen `label` og krever `supabase secrets set ANTHROPIC_API_KEY=...`. Hvert bilde koster noen få øre og faktureres på Anthropic-kontoen. Bildet lagres ikke. Bare i webappen (native trenger `expo-image-picker`). Selve avlesningen er ikke testet i utviklingsmiljøet, som mangler nøkkel.
+
 - Type, årgang, pris, distrikt, druer, alkohol, smak og mat hentes fra vinmonopolet.no sitt eget nettsted (`vmpws/v3`), som **ikke** er et offisielt API. Det kan endres eller stenges uten varsel; da virker appen som før, og feltene fylles inn for hånd med «Endre».
 
 - Vinmonopolet-API-et er testet mot det ekte endepunktet 27.09.2026: proxyen, søk på ett og to ord (mellomrom → `_`) og produktbilder virker. De automatiske testene går fortsatt mot `tests/mock-vmp.mjs`.

@@ -9,7 +9,7 @@ export type Scan =
   | { phase: 'lookup'; ean: string }
   | { phase: 'res'; wine: Wine; isNew: boolean; qty: number; /** strekkode som skal kobles */ ean?: string; /** strekkoden som ble skannet */ scanned?: string };
 
-export type Search = { ean?: string; prefill?: string };
+export type Search = { ean?: string; prefill?: string; /** søk med en gang */ autorun?: boolean };
 /** Vin som ikke finnes hos Vinmonopolet. */
 export type Manual = { ean?: string; name?: string };
 

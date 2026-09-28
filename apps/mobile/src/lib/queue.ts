@@ -93,6 +93,7 @@ async function run(op: Op) {
     const { error } = await supabase.rpc('create_manual_product', {
       p_id: w.productId, p_name: w.name, p_producer: w.producer || null, p_type: w.type, p_vintage: w.year,
       p_price: w.price || null, p_country: w.country || null, p_region: w.region || null,
+      p_grapes: w.grape ? w.grape.split(',').map((g) => g.trim()).filter(Boolean) : null,
     });
     if (error) fail(error);
   } else if (!pid || op.isNew) {
