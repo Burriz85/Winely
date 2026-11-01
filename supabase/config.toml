@@ -413,3 +413,8 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+# Nattlig synk kalles av cron med den hemmelige nøkkelen (sb_secret_…), som ikke er en JWT og ville
+# blitt avvist av gatewayen. Funksjonen sjekker selv: cron = nøyaktig nøkkel, bruker = is_active().
+[functions.vmp-sync]
+verify_jwt = false

@@ -5,8 +5,9 @@
 // Hvert kall logges i api_health.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { CORS, jwtRole } from '../_shared/cors.ts';
+import { SECRET_KEY } from '../_shared/keys.ts';
 
-const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+const admin = createClient(Deno.env.get('SUPABASE_URL')!, SECRET_KEY);
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });

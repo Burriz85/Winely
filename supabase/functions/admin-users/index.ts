@@ -7,6 +7,7 @@
 // Deploy: supabase functions deploy admin-users
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { CORS, json } from '../_shared/cors.ts';
+import { PUBLIC_KEY, SECRET_KEY } from '../_shared/keys.ts';
 
 const BAN_FOREVER = '876000h'; // 100 år
 const MIN_PW = 8;
@@ -14,7 +15,7 @@ const MIN_PW = 8;
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   const url = Deno.env.get('SUPABASE_URL')!;
-  const caller = createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!, {
+  const caller = createClient(url, PUBLIC_KEY, {
     global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
   });
   const { data: isAdmin } = await caller.rpc('is_admin');
@@ -25,7 +26,7 @@ Deno.serve(async (req) => {
   const email = String(body.email ?? '').trim().toLowerCase();
   const password = String(body.password ?? '');
   const id: string | undefined = body.id;
-  const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  const admin = createClient(url, SECRET_KEY);
   const { data: me } = await caller.auth.getUser();
   const actor = me.user?.id;
   const log = (what: string) => admin.from('audit_log').insert({ actor, kind: 'admin', action: what, target: email });

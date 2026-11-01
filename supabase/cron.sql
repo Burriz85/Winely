@@ -7,7 +7,9 @@ create extension if not exists pg_net;
 
 -- Legg prosjekt-URL og service role-nøkkel i Vault én gang:
 --   select vault.create_secret('https://<prosjekt>.supabase.co', 'project_url');
---   select vault.create_secret('<SERVICE_ROLE_KEY>', 'service_role_key');
+--   select vault.create_secret('<sb_secret_…>', 'service_role_key');   -- den hemmelige API-nøkkelen
+-- Bytte nøkkel senere:
+--   select vault.update_secret((select id from vault.secrets where name = 'service_role_key'), '<sb_secret_…>');
 
 select cron.schedule('vmp-sync', '0 3 * * *', $$
   select net.http_post(

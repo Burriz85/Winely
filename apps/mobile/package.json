@@ -40,7 +40,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "export:web": "node scripts/copy-zxing.mjs && expo export -p web"
+    "export:web": "node scripts/copy-zxing.mjs && expo export -p web --clear"
   },
   "private": true
 }

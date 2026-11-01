@@ -7,15 +7,15 @@
 // Navn kommer fra det offisielle API-et (products/v0). Type, årgang, pris, land, distrikt, druer,
 // alkohol, smak og mat kommer fra vinmonopolet.no sitt eget nettsted (vmpws/v3), som IKKE er et
 // offisielt API. Feiler det, fortsetter alt annet som før.
-// Deploy: supabase functions deploy vmp-sync
+// Deploy: supabase functions deploy vmp-sync  (verify_jwt = false i supabase/config.toml)
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { XMLParser } from 'npm:fast-xml-parser@5';
-import { CORS, json, jwtRole } from '../_shared/cors.ts';
+import { CORS, json } from '../_shared/cors.ts';
+import { isServiceCall, PUBLIC_KEY, SECRET_KEY } from '../_shared/keys.ts';
 import { normalizeDetails, type VmpDetails } from '../_shared/vmpweb.ts';
 
 const URL_ = Deno.env.get('SUPABASE_URL')!;
-const SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const admin = createClient(URL_, SERVICE);
+const admin = createClient(URL_, SECRET_KEY);
 const PAGE = 500;
 const WEB = Deno.env.get('VMP_WEB_BASE_URL') ?? 'https://www.vinmonopolet.no';
 
@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
 
   try {
     if (body?.vmp_nr) {
-      const caller = createClient(URL_, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: auth } } });
+      const caller = createClient(URL_, PUBLIC_KEY, { global: { headers: { Authorization: auth } } });
       const { data: active } = await caller.rpc('is_active');
       if (!active) return new Response('Forbidden', { status: 403, headers: CORS });
       const nr = String(body.vmp_nr);
@@ -111,9 +111,10 @@ Deno.serve(async (req) => {
       return json({ ok: true, found: true, name: rows[0]?.basic?.productShortName ?? d?.name ?? null, details: !!d });
     }
 
-    // Gatewayen har verifisert signaturen. Sjekk rollen i stedet for å sammenligne med
-    // SUPABASE_SERVICE_ROLE_KEY, som på hostet Supabase kan være en annen nøkkeltype.
-    if (jwtRole(auth) !== 'service_role') return new Response('Forbidden: krever service_role', { status: 403, headers: CORS });
+    // Funksjonen kjører uten verify_jwt (cron sender en sb_secret_-nøkkel, som ikke er en JWT),
+    // så nattlig synk krever at Authorization er nøyaktig den hemmelige nøkkelen.
+    // Brukerkall over sjekkes av databasen (is_active), som verifiserer tokenet selv.
+    if (!isServiceCall(req)) return new Response('Forbidden: krever den hemmelige nøkkelen', { status: 403, headers: CORS });
     const since = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
     let start = 0, updated = 0, seen = 0;
     for (;;) {

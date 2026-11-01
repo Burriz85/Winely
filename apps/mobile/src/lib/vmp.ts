@@ -30,7 +30,12 @@ export const vmp = createVmpClient({
   baseUrl: SUPABASE_URL + '/functions/v1/vmp',
   headers: async () => {
     const { data } = await supabase.auth.getSession();
-    return { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + (data.session?.access_token ?? SUPABASE_ANON_KEY) };
+    // Uten innlogging sendes ingen Authorization: proxyen krever en bruker uansett, og en
+    // sb_publishable_-nøkkel er ikke en JWT og ville gitt en mindre forståelig feil.
+    const token = data.session?.access_token;
+    const h: Record<string, string> = { apikey: SUPABASE_ANON_KEY };
+    if (token) h.Authorization = 'Bearer ' + token;
+    return h;
   },
 });
 

@@ -57,13 +57,17 @@ npm run test:db     # 17 integrasjonstester mot lokal Supabase (krever oppsettet
 1. Opprett et Supabase-prosjekt og kjør `npx supabase link` og `npx supabase db push` (migreringene 0001–0003).
 2. Authentication → Sign In / Providers: «Allow new users to sign up» **av**. Email-leverandøren **på** (ellers virker ingen innlogging), minste passordlengde 8. Alle OAuth-leverandører av. E-postmaler og SMTP trengs ikke.
 3. `npx supabase secrets set VMP_KEY=<ny nøkkel>` – **lag en ny nøkkel**, for den gamle har vært delt i klartekst.
-4. `npx supabase functions deploy vmp vmp-sync admin-users`
-5. Lag din egen bruker i dashboardet (Authentication → Users → Add user → Create new user, «Auto Confirm User» på; bruk f.eks. `admin@vinskap.local` for å logge inn som «admin») og kjør `update profiles set is_admin = true where id = (select id from auth.users where email = '…');`
-6. Kjør `supabase/cron.sql` i SQL-editoren (nattlig vmp-sync kl. 03).
-7. Netlify, to nettsteder fra samme repo (Base directory tomt, Node 22 fra `.nvmrc`):
-   - Admin: build `npm run build:admin`, publish `apps/admin/dist`, miljøvariabler `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_VMP_QUOTA`.
-   - Webappen: build `npm run build:web`, publish `apps/mobile/dist`, miljøvariabler `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+4. Nøkler: bruk de nye API-nøklene (Project Settings → API Keys), ikke legacy `anon`/`service_role`.
+   `npx supabase secrets set SB_SECRET_KEY=<sb_secret_…> SB_PUBLISHABLE_KEY=<sb_publishable_…>`.
+   Funksjonene faller tilbake på de gamle JWT-nøklene hvis disse mangler.
+5. `npx supabase functions deploy vmp vmp-sync admin-users label`. `vmp-sync` kjører uten verify_jwt (se `supabase/config.toml`): cron sender `sb_secret_…`, som ikke er en JWT, og funksjonen sjekker nøkkelen selv.
+6. Lag din egen bruker i dashboardet (Authentication → Users → Add user → Create new user, «Auto Confirm User» på; bruk f.eks. `admin@vinskap.local` for å logge inn som «admin») og kjør `update profiles set is_admin = true where id = (select id from auth.users where email = '…');`
+7. Kjør `supabase/cron.sql` i SQL-editoren (nattlig vmp-sync kl. 03). Vault-hemmeligheten `service_role_key` skal være `sb_secret_…`-nøkkelen.
+8. Netlify, to nettsteder fra samme repo (Base directory tomt, Node 22 fra `.nvmrc`):
+   - Admin: build `npm run build:admin`, publish `apps/admin/dist`, miljøvariabler `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (= `sb_publishable_…`), `VITE_VMP_QUOTA`.
+   - Webappen: build `npm run build:web`, publish `apps/mobile/dist`, miljøvariabler `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` (= `sb_publishable_…`). Variablene bakes inn ved bygging: endres de, må siten bygges på nytt.
    - `_redirects` i begge sender alle stier til `index.html`. Native app: `eas build`.
+9. Når alt virker med de nye nøklene: API Keys → Legacy → deaktiver legacy-nøklene, og JWT Keys → trekk tilbake den gamle HS256-nøkkelen («Previous»). Først da er en lekket `service_role`-nøkkel ugyldig.
 
 ## Avvik fra handoff-pakken, og hvorfor
 

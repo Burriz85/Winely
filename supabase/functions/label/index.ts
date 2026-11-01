@@ -7,8 +7,9 @@
 import Anthropic from 'npm:@anthropic-ai/sdk@0.129';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { CORS, json } from '../_shared/cors.ts';
+import { PUBLIC_KEY, SECRET_KEY } from '../_shared/keys.ts';
 
-const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+const admin = createClient(Deno.env.get('SUPABASE_URL')!, SECRET_KEY);
 const MAX_BYTES = 4_000_000; // appen skalerer ned til ~1280 px, som gir godt under dette
 
 const SCHEMA = {
@@ -35,7 +36,7 @@ Er bildet ikke en vinetikett, returner tomme verdier.`;
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
 
-  const caller = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+  const caller = createClient(Deno.env.get('SUPABASE_URL')!, PUBLIC_KEY, {
     global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
   });
   const { data: active } = await caller.rpc('is_active');
