@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createVmpClient, defaultWindow, displayLogin, toLoginEmail, drinkStatus, guessYear, kr, normalize, relTime, toSearchTerm, vmpImage } from '../src';
+import { createVmpClient, defaultWindow, displayLogin, toLoginEmail, drinkStatus, guessYear, kr, normalize, parseVmpNr, ambiguousNr, relTime, toSearchTerm, vmpImage } from '../src';
 
 describe('format', () => {
   it('kr', () => {
@@ -69,5 +69,30 @@ describe('vmp', () => {
   it('gir norsk feilmelding ved 429', async () => {
     const client = createVmpClient({ baseUrl: 'https://x', headers: () => ({}), fetch: (async () => new Response('', { status: 429 })) as unknown as typeof fetch });
     await expect(client.byId('1')).rejects.toThrow('For mange kall');
+  });
+});
+
+describe('varenummer', () => {
+  it('kjenner igjen varenummer og lenker', () => {
+    expect(parseVmpNr('9422102')).toBe('9422102');
+    expect(parseVmpNr(' 563301 ')).toBe('563301');
+    expect(parseVmpNr('Varenr. 9422102')).toBe('9422102');
+    expect(parseVmpNr('varenummer: 9422102')).toBe('9422102');
+    expect(parseVmpNr('#9422102')).toBe('9422102');
+    expect(parseVmpNr('https://www.vinmonopolet.no/Land/Italia/Brezza-Barolo-Cannubi-2017/p/1670901')).toBe('1670901');
+    expect(parseVmpNr('vinmonopolet.no/p/1670901?q=x')).toBe('1670901');
+  });
+  it('lar navnesøk og strekkoder være', () => {
+    expect(parseVmpNr('Barolo')).toBeNull();
+    expect(parseVmpNr('Barolo 2017')).toBeNull();
+    expect(parseVmpNr('8002235013826')).toBeNull();
+    expect(parseVmpNr('')).toBeNull();
+    expect(parseVmpNr('https://example.com/p/123')).toBeNull();
+  });
+  it('fire siffer som ligner en årgang er tvetydige', () => {
+    expect(ambiguousNr('2019')).toBe(true);
+    expect(ambiguousNr('1999')).toBe(true);
+    expect(ambiguousNr('9422102')).toBe(false);
+    expect(ambiguousNr('1234')).toBe(false);
   });
 });

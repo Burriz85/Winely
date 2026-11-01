@@ -12,6 +12,7 @@ export async function previewDetails(nr: string): Promise<Partial<Wine> | null> 
   const d = await Promise.race([call, new Promise<null>((r) => setTimeout(() => r(null), 5000))]);
   if (!d) return null;
   const p: Partial<Wine> = {};
+  if (d.name) p.name = d.name;
   if (isWineType(d.type)) p.type = d.type;
   if (d.vintage) Object.assign(p, { year: d.vintage }, defaultWindow(d.vintage));
   if (d.price) p.price = Number(d.price);

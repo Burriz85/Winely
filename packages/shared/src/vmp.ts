@@ -11,7 +11,23 @@ export const vmpProductUrl = (nr: string) => 'https://www.vinmonopolet.no/p/' + 
 /** API-et avviser mellomrom («No spaces …»). Handoff: erstatt med `_`. */
 export const toSearchTerm = (q: string) => q.trim().replace(/\s+/g, '_');
 
-export type VmpRaw = { basic?: { productId?: string | number; productShortName?: string }; lastChanged?: { date?: string; time?: string } };
+/**
+ * Varenummer fra det brukeren skrev inn, eller null hvis det er et vanlig navnesøk.
+ * Godtar «9422102», «Varenr. 9422102», «#9422102» og lenker som «vinmonopolet.no/…/p/9422102».
+ * Maks 12 siffer: 13 siffer er en strekkode (EAN-13), ikke et varenummer.
+ */
+export function parseVmpNr(input: string): string | null {
+  const s = input.trim();
+  const url = s.match(/vinmonopolet\.no\/(?:.*\/)?p\/(\d{1,12})(?:[/?#]|$)/i);
+  if (url) return url[1];
+  const m = s.match(/^(?:varenr\.?|varenummer|vnr\.?)?\s*:?\s*#?\s*(\d{1,12})$/i);
+  return m ? m[1] : null;
+}
+
+/** Fire siffer som 1990–2039 kan like gjerne være en årgang i et navnesøk. */
+export const ambiguousNr = (nr: string) => /^(19[5-9]\d|20[0-3]\d)$/.test(nr);
+
+export type VmpRaw ={ basic?: { productId?: string | number; productShortName?: string }; lastChanged?: { date?: string; time?: string } };
 
 /** details-normal gir bare varenr. og navn. Resten fylles inn av brukeren. */
 export function normalize(p: VmpRaw, now = new Date().getFullYear()): Wine {

@@ -1,4 +1,4 @@
-import { C, type Wine } from '@vinskap/shared';
+import { ambiguousNr, C, normalize, parseVmpNr, type Wine } from '@vinskap/shared';
 import { ChevronRight, Search as SearchIcon } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
@@ -21,11 +21,12 @@ export function SearchOverlay() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [results, setResults] = useState<Wine[]>([]);
+  const [missingNr, setMissingNr] = useState<string | null>(null);
   const ean = search?.ean;
 
   useEffect(() => {
     if (!search) return;
-    setQ(search.prefill ?? ''); setResults([]); setDone(false); setError(null);
+    setQ(search.prefill ?? ''); setResults([]); setDone(false); setError(null); setMissingNr(null);
     // Valgfritt (handoff): Open Food Facts fyller ut søkefeltet for ukjente strekkoder.
     if (search.ean && !search.prefill) offName(search.ean).then((n) => n && setQ((cur) => cur || n));
     if (search.autorun && search.prefill) runQuery(search.prefill);
@@ -36,9 +37,22 @@ export function SearchOverlay() {
   const run = () => runQuery(q);
   async function runQuery(query: string) {
     if (!query.trim()) return;
-    setLoading(true); setError(null);
+    setLoading(true); setError(null); setMissingNr(null);
+    const nr = parseVmpNr(query);
     try {
-      setResults(await vmp.search(query));
+      if (nr && !ambiguousNr(nr)) {
+        // Varenummer: åpne vinen direkte.
+        const hit = await findByNr(nr);
+        if (hit) return pick(hit.wine, hit.details);
+        setResults([]); setMissingNr(nr);
+      } else if (nr) {
+        // «2019» kan være både et varenummer og en årgang i navnet: vis begge. Uten oppslag på
+        // vinmonopolet.no her, ellers venter et vanlig årgangssøk opptil 5 s på tidsavbruddet.
+        const [hit, list] = await Promise.all([findByNr(nr, false).catch(() => null), vmp.search(query)]);
+        setResults(hit ? [hit.wine, ...list.filter((w) => w.nr !== nr)] : list);
+      } else {
+        setResults(await vmp.search(query));
+      }
     } catch (e) {
       setError((e as Error).message);
       setResults([]);
@@ -46,7 +60,22 @@ export function SearchOverlay() {
     setLoading(false); setDone(true);
   }
 
-  const pick = async (r: Wine) => {
+  /**
+   * Slår opp ett varenummer. Det offisielle API-et først; finnes det ikke der (f.eks. utgått eller
+   * bare i bestillingsutvalget), prøves vinmonopolet.no. Feiler begge, kastes feilen fra API-et.
+   */
+  async function findByNr(nr: string, web = true): Promise<{ wine: Wine; details?: Partial<Wine> | null } | null> {
+    let apiError: unknown = null;
+    const hit = await vmp.byId(nr).catch((e) => { apiError = e; return null; });
+    if (hit) return { wine: hit };
+    const d = web ? await previewDetails(nr) : null;
+    if (d?.name) return { wine: { ...normalize({ basic: { productId: nr, productShortName: d.name } }), ...d }, details: d };
+    if (apiError) throw apiError;
+    return null;
+  }
+
+  /** details: allerede hentet fra vinmonopolet.no (undefined = hent nå). */
+  const pick = async (r: Wine, details?: Partial<Wine> | null) => {
     const have = wines.find((w) => w.nr === r.nr);
     let wine: Wine = have ?? r;
     if (!have) {
@@ -55,14 +84,14 @@ export function SearchOverlay() {
       const { data } = await supabase.from('products').select('*').eq('vmp_nr', r.nr).maybeSingle();
       if (data) wine = { ...productToWine(data), name: r.name };
       // Fyll inn fra vinmonopolet.no der vi ikke har data fra før.
-      const d = await previewDetails(r.nr);
+      const d = details !== undefined ? details : await previewDetails(r.nr);
       if (d) {
         const base = wine;
         const fill = Object.fromEntries(Object.entries(d).filter(([k]) => !base[k as keyof Wine] || k === 'from' || k === 'to'));
         wine = { ...base, ...fill };
       }
-      setLoading(false);
     }
+    setLoading(false);
     setSearch(null);
     setScan({ phase: 'res', wine, isNew: !have, qty: 1, ean });
   };
@@ -79,7 +108,7 @@ export function SearchOverlay() {
           <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, height: 44, paddingHorizontal: 14, borderWidth: 1, borderColor: C.sageLight, borderRadius: 4, backgroundColor: C.white }}>
             <SearchIcon size={16} color={C.coalSoft} strokeWidth={1.6} />
             <TextInput value={q} onChangeText={setQ} onSubmitEditing={run} returnKeyType="search" autoFocus
-              placeholder="Navn eller produsent" placeholderTextColor={C.coalSoft + '99'}
+              placeholder="Navn, produsent eller varenummer" placeholderTextColor={C.coalSoft + '99'}
               style={{ flex: 1, fontSize: 15, color: C.coal, ...figtree(400), outlineStyle: 'none' } as object} />
           </View>
           <Btn label="Søk" onPress={run} />
@@ -93,7 +122,7 @@ export function SearchOverlay() {
           </View>
         )}
         {!loading && done && !error && !results.length && (
-          <Text style={{ paddingVertical: 32, textAlign: 'center', ...figtree(400), fontSize: 14, color: C.coalSoft }}>Ingen treff.</Text>
+          <Text style={{ paddingVertical: 32, textAlign: 'center', ...figtree(400), fontSize: 14, color: C.coalSoft }}>{missingNr ? `Fant ingen vin med varenummer ${missingNr}.` : 'Ingen treff.'}</Text>
         )}
         {!loading && results.map((r) => (
           <Pressable key={r.nr} onPress={() => pick(r)}
@@ -109,7 +138,7 @@ export function SearchOverlay() {
         ))}
         {!loading && (done || !!ean) && (
           <LinkBtn label="Finner du ikke vinen? Legg den inn selv" size={14} style={{ alignSelf: 'center', marginTop: 16 }}
-            onPress={() => { setSearch(null); setManual({ ean, name: q.trim() }); }} />
+            onPress={() => { setSearch(null); setManual({ ean, name: missingNr ? '' : q.trim() }); }} />
         )}
       </ScrollView>
     </View>
