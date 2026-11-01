@@ -99,7 +99,7 @@ export default function CellarScreen() {
       <Text style={t.hero}>{total} flasker</Text>
 
       <View style={{ flexDirection: 'row', borderTopWidth: 1, borderBottomWidth: 1, borderColor: C.sageLight }}>
-        <Stat first label="Viner" value={wines.length} />
+        <Stat first label="Ulike viner" value={wines.length} />
         <Stat label="Klar" value={ready} color={C.honeyText} />
         <Stat label="Verdi" value={kr(value)} size={18} />
       </View>
