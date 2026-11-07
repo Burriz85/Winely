@@ -26,6 +26,8 @@ type UI = {
   setProfileOpen: (v: boolean) => void;
   apiOpen: boolean;
   setApiOpen: (v: boolean) => void;
+  advisorOpen: boolean;
+  setAdvisorOpen: (v: boolean) => void;
   listView: ListView;
   setListView: (v: ListView) => void;
 };
@@ -40,6 +42,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const [manual, setManual] = useState<Manual | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [apiOpen, setApiOpen] = useState(false);
+  const [advisorOpen, setAdvisorOpen] = useState(false);
   const [listView, setLV] = useState<ListView>('Rader');
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -63,8 +66,8 @@ export function UIProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(() => ({
-    toast, flash, scan, setScan, search, setSearch, manual, setManual, profileOpen, setProfileOpen, apiOpen, setApiOpen, listView, setListView,
-  }), [toast, flash, scan, search, manual, profileOpen, apiOpen, listView, setListView]);
+    toast, flash, scan, setScan, search, setSearch, manual, setManual, profileOpen, setProfileOpen, apiOpen, setApiOpen, advisorOpen, setAdvisorOpen, listView, setListView,
+  }), [toast, flash, scan, search, manual, profileOpen, apiOpen, advisorOpen, listView, setListView]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

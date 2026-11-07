@@ -60,7 +60,7 @@ npm run test:db     # 17 integrasjonstester mot lokal Supabase (krever oppsettet
 4. Nøkler: bruk de nye API-nøklene (Project Settings → API Keys), ikke legacy `anon`/`service_role`.
    `npx supabase secrets set SB_SECRET_KEY=<sb_secret_…> SB_PUBLISHABLE_KEY=<sb_publishable_…>`.
    Funksjonene faller tilbake på de gamle JWT-nøklene hvis disse mangler.
-5. `npx supabase functions deploy vmp vmp-sync admin-users label`. `vmp-sync` kjører uten verify_jwt (se `supabase/config.toml`): cron sender `sb_secret_…`, som ikke er en JWT, og funksjonen sjekker nøkkelen selv.
+5. `npx supabase functions deploy vmp vmp-sync admin-users label advisor`. `label` (etikettlesing) og `advisor` (vinrådgiver) trenger `npx supabase secrets set ANTHROPIC_API_KEY=…`. `vmp-sync` kjører uten verify_jwt (se `supabase/config.toml`): cron sender `sb_secret_…`, som ikke er en JWT, og funksjonen sjekker nøkkelen selv.
 6. Lag din egen bruker i dashboardet (Authentication → Users → Add user → Create new user, «Auto Confirm User» på; bruk f.eks. `admin@vinskap.local` for å logge inn som «admin») og kjør `update profiles set is_admin = true where id = (select id from auth.users where email = '…');`
 7. Kjør `supabase/cron.sql` i SQL-editoren (nattlig vmp-sync kl. 03). Vault-hemmeligheten `service_role_key` skal være `sb_secret_…`-nøkkelen.
 8. Netlify, to nettsteder fra samme repo (Base directory tomt, Node 22 fra `.nvmrc`):

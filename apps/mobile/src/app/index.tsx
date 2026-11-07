@@ -1,6 +1,6 @@
 import { C, drinkStatus, initial, kr, typeColor, WINE_TYPES, type Wine } from '@vinskap/shared';
 import { useRouter } from 'expo-router';
-import { Search } from 'lucide-react-native';
+import { ChevronRight, Search, Sparkles } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -34,7 +34,7 @@ export default function CellarScreen() {
   const { profile, session } = useAuth();
   const { cellar, loading: cellarLoading } = useCellar();
   const { wines, isLoading } = useWines(cellar?.id);
-  const { setProfileOpen, setApiOpen, listView } = useUI();
+  const { setProfileOpen, setApiOpen, setAdvisorOpen, listView } = useUI();
   const status = useVmpStatus(true);
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('Alle');
@@ -103,6 +103,18 @@ export default function CellarScreen() {
         <Stat label="Klar" value={ready} color={C.honeyText} />
         <Stat label="Verdi" value={kr(value)} size={18} />
       </View>
+
+      {wines.length > 0 && (
+        <Pressable onPress={() => setAdvisorOpen(true)} accessibilityRole="button"
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 4, backgroundColor: C.sageDark }}>
+          <Sparkles size={18} color={C.ivory} strokeWidth={1.6} />
+          <View style={{ flex: 1, gap: 1 }}>
+            <Text style={{ ...figtree(600), fontSize: 15, color: C.ivory }}>Hvilken vin passer?</Text>
+            <Text style={{ ...figtree(400), fontSize: 13, color: C.ivory + 'CC' }}>Fortell hva du skal servere, så foreslår rådgiveren flasker herfra</Text>
+          </View>
+          <ChevronRight size={16} color={C.ivory} strokeWidth={1.6} />
+        </Pressable>
+      )}
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, height: 44, paddingHorizontal: 14, borderWidth: 1, borderColor: C.sageLight, borderRadius: 4, backgroundColor: C.white }}>
         <Search size={16} color={C.coalSoft} strokeWidth={1.6} />

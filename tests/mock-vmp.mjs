@@ -22,6 +22,26 @@ export const WEB_ONLY = [['12345601', 'Domaine Utgått Syrah 2018']];
 export function startMockVmp(port = 8787) {
   const server = http.createServer((req, res) => {
     const u = new URL(req.url, 'http://x');
+    // api.anthropic.com/v1/messages for vinrådgiveren (ANTHROPIC_BASE_URL peker hit i lokale tester).
+    // Velger de to første vinene i listen og en id som ikke finnes, så filtreringen i funksjonen testes.
+    if (u.pathname === '/v1/messages' && req.method === 'POST') {
+      let raw = '';
+      req.on('data', (c) => { raw += c; });
+      req.on('end', () => {
+        const body = JSON.parse(raw || '{}');
+        const system = typeof body.system === 'string' ? body.system : '';
+        const ids = [...system.matchAll(/^(v\d+): ([^·\n]+)/gm)].map((m) => [m[1], m[2].trim()]);
+        const picks = [...ids.slice(0, 2).map(([id, name]) => ({ id, reason: `${name} passer godt (testsvar).` })), { id: 'v999', reason: 'finnes ikke' }];
+        const answer = { summary: `Til «${body.messages?.[0]?.content}» foreslår jeg disse (testsvar).`, picks };
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          id: 'msg_mock', type: 'message', role: 'assistant', model: body.model, stop_reason: 'end_turn', stop_sequence: null,
+          content: [{ type: 'text', text: JSON.stringify(answer) }],
+          usage: { input_tokens: 1, output_tokens: 1 },
+        }));
+      });
+      return;
+    }
     // vinmonopolet.no/vmpws/v3/vmp/products/<nr> (nettstedets eget API, svarer med XML)
     const web = u.pathname.match(/^\/vmpws\/v3\/vmp\/products\/(\d+)$/);
     if (web) {

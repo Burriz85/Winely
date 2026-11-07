@@ -80,12 +80,15 @@ export const useApiHealth = () => useQuery({
   queryKey: ['api-health'],
   queryFn: async (): Promise<ApiHealth> => {
     const since = new Date(Date.now() - 86_400_000).toISOString();
+    // Bare kall mot Vinmonopolet. Claude-kallene (etikett, rådgiver) logges også i api_health,
+    // men hører ikke hjemme i statusen for Vinmonopolet-API-et.
+    const VMP = ['proxy', 'sync', 'test', 'web'];
     const t = () => supabase.from('api_health');
     const [latest, calls, errors, lastError, lastSync] = await Promise.all([
-      t().select('status,latency_ms,at').order('at', { ascending: false }).limit(1),
-      t().select('id', { count: 'exact', head: true }).gte('at', since),
-      t().select('id', { count: 'exact', head: true }).gte('at', since).or('status.gte.400,error.not.is.null'),
-      t().select('status,error,at').or('status.gte.400,error.not.is.null').order('at', { ascending: false }).limit(1),
+      t().select('status,latency_ms,at').in('source', VMP).order('at', { ascending: false }).limit(1),
+      t().select('id', { count: 'exact', head: true }).in('source', VMP).gte('at', since),
+      t().select('id', { count: 'exact', head: true }).in('source', VMP).gte('at', since).or('status.gte.400,error.not.is.null'),
+      t().select('status,error,at').in('source', VMP).or('status.gte.400,error.not.is.null').order('at', { ascending: false }).limit(1),
       t().select('at').eq('source', 'sync').order('at', { ascending: false }).limit(1),
     ]);
     for (const r of [latest, calls, errors, lastError, lastSync]) if (r.error) throw new Error(r.error.message);

@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Platform, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AdvisorSheet } from '../components/AdvisorSheet';
 import { ApiSheet } from '../components/ApiSheet';
 import { Login } from '../components/Login';
 import { ManualWineSheet } from '../components/ManualWineSheet';
@@ -38,6 +39,7 @@ function Shell() {
       <SearchOverlay />
       <ManualWineSheet />
       <ApiSheet />
+      <AdvisorSheet />
       <ProfileSheet />
       <Toast />
     </View>
